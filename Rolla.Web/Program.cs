@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Rolla.Infrastructure.Data;
+using Rolla.Application.Interfaces;
+using Rolla.Application.Services;
 using Rolla.Domain.Entities;
+using Rolla.Infrastructure.Data;
 
 
 
@@ -31,6 +33,14 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => {
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddControllersWithViews();
+
+// ثبت اینترفیس دیتابیس
+builder.Services.AddScoped<IApplicationDbContext>(provider =>
+    provider.GetRequiredService<ApplicationDbContext>());
+
+// ثبت سرویس سفر
+builder.Services.AddScoped<ITripService, TripService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

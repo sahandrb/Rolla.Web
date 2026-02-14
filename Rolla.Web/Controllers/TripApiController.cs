@@ -30,5 +30,16 @@ public class TripApiController : ControllerBase
 
         return Ok(new { Message = "سفر با موفقیت ثبت شد و در انتظار راننده است", TripId = tripId });
     }
+    [HttpGet("nearby")]
+    public async Task<IActionResult> GetNearby([FromQuery] double lat, [FromQuery] double lng)
+    {
+        // استفاده از سرویسی که برای ردیس نوشتیم
+        var geoService = HttpContext.RequestServices.GetRequiredService<IGeoLocationService>();
+
+        // جستجوی راننده‌ها در شعاع ۱۰ کیلومتری
+        var drivers = await geoService.GetNearbyDriversAsync(lat, lng, 10);
+
+        return Ok(new { Count = drivers.Count, DriverIds = drivers });
+    }
 }
 

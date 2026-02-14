@@ -1,0 +1,16 @@
+E:\Brooklyn\Rolla.Application\bin\Debug\net9.0\Rolla.Application.deps.json
+E:\Brooklyn\Rolla.Application\bin\Debug\net9.0\Rolla.Application.dll
+E:\Brooklyn\Rolla.Application\bin\Debug\net9.0\Rolla.Application.pdb
+E:\Brooklyn\Rolla.Application\bin\Debug\net9.0\Rolla.Domain.dll
+E:\Brooklyn\Rolla.Application\bin\Debug\net9.0\Rolla.Domain.pdb
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\Rolla.Application.csproj.AssemblyReference.cache
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\Rolla.Application.GeneratedMSBuildEditorConfig.editorconfig
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\Rolla.Application.AssemblyInfoInputs.cache
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\Rolla.Application.AssemblyInfo.cs
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\Rolla.Application.csproj.CoreCompileInputs.cache
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\EFCoreSqlServerNetTopologySuite.cs
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\Rolla.Ap.15072C91.Up2Date
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\Rolla.Application.dll
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\refint\Rolla.Application.dll
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\Rolla.Application.pdb
+E:\Brooklyn\Rolla.Application\obj\Debug\net9.0\ref\Rolla.Application.dll

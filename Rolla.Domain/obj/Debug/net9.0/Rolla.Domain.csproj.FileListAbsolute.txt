@@ -1,0 +1,13 @@
+E:\Brooklyn\Rolla.Domain\bin\Debug\net9.0\Rolla.Domain.deps.json
+E:\Brooklyn\Rolla.Domain\bin\Debug\net9.0\Rolla.Domain.dll
+E:\Brooklyn\Rolla.Domain\bin\Debug\net9.0\Rolla.Domain.pdb
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\Rolla.Domain.csproj.AssemblyReference.cache
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\Rolla.Domain.GeneratedMSBuildEditorConfig.editorconfig
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\Rolla.Domain.AssemblyInfoInputs.cache
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\Rolla.Domain.AssemblyInfo.cs
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\Rolla.Domain.csproj.CoreCompileInputs.cache
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\EFCoreSqlServerNetTopologySuite.cs
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\Rolla.Domain.dll
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\refint\Rolla.Domain.dll
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\Rolla.Domain.pdb
+E:\Brooklyn\Rolla.Domain\obj\Debug\net9.0\ref\Rolla.Domain.dll

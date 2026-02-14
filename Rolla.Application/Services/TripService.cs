@@ -17,18 +17,18 @@ namespace Rolla.Application.Services;
 public class TripService : ITripService
 {
     private readonly IApplicationDbContext _context;
+    private readonly INotificationService _notificationService; // ۱. اضافه کردن این خط
 
-    public TripService(IApplicationDbContext context)
+    // ۲. اضافه کردن به سازنده
+    public TripService(IApplicationDbContext context, INotificationService notificationService)
     {
         _context = context;
+        _notificationService = notificationService;
     }
 
     public async Task<int> CreateTripAsync(CreateTripDto dto, string riderId)
     {
-        // ایجاد کارخانه برای ساخت نقاط جغرافیایی با استاندارد GPS (SRID 4326)
         var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-
-        // تبدیل اعداد اعشاری به مدل مختصاتی Point
         var originPoint = geometryFactory.CreatePoint(new Coordinate(dto.OriginLng, dto.OriginLat));
         var destPoint = geometryFactory.CreatePoint(new Coordinate(dto.DestinationLng, dto.DestinationLat));
 
@@ -38,13 +38,16 @@ public class TripService : ITripService
             Origin = originPoint,
             Destination = destPoint,
             Price = dto.EstimatedPrice,
-            Status = TripStatus.Searching, // وضعیت شروع: در حال جستجو برای راننده
+            Status = TripStatus.Searching,
             CreatedAt = DateTime.UtcNow
         };
 
         _context.Trips.Add(trip);
         await _context.SaveChangesAsync();
 
-        return trip.Id; // برگرداندن آیدی سفر برای استفاده در SignalR یا مانیتورینگ
+        // ۳. شلیک نوتیفیکیشن زنده به SignalR
+        await _notificationService.NotifyNewTripAsync(trip.Id, dto.OriginLat, dto.OriginLng, trip.Price);
+
+        return trip.Id;
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Rolla.Application.Interfaces;
+using Rolla.Application.Interfaces; // حتما این یوزینگ رو چک کن
 using Rolla.Web.Hubs;
 
 namespace Rolla.Web.Services;
@@ -13,11 +13,9 @@ public class NotificationService : INotificationService
         _hubContext = hubContext;
     }
 
-    // این متد وقتی صدا زده میشه که مسافر دکمه "درخواست سفر" رو زده
     public async Task NotifyNewTripAsync(int tripId, double lat, double lng, decimal price)
     {
-        // به همه راننده‌ها خبر بده (Broadcasting)
-        // در نسخه نهایی، اینجا فقط به راننده‌های نزدیک (GeoQuery) خبر میدیم
+        // ارسال پیام زنده به همه (ReceiveNewTripRequest همون اسمیه که تو JS نوشتی)
         await _hubContext.Clients.All.SendAsync("ReceiveNewTripRequest", new
         {
             TripId = tripId,

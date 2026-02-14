@@ -45,6 +45,13 @@ builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
+
+// ۱. ثبت بافر هوشمند (Aggregator) - حتماً Singleton باشد
+builder.Services.AddSingleton<LocationAggregator>();
+
+// ۲. ثبت کارگر پس‌زمینه (Worker) - برای تخلیه بافر به ردیس
+builder.Services.AddHostedService<LocationUploadService>();
+
 var app = builder.Build();
 app.UseRouting();
 // Configure the HTTP request pipeline.

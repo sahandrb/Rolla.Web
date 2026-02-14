@@ -10,7 +10,7 @@ namespace Rolla.Domain.Entities
 
     public class ApplicationUser : IdentityUser
     {
-        public string FullName { get; set; } = default!;
+        public string? FullName { get; set; } = default!;
         // فیلدهای اختصاصی بیزنس شما
         public bool IsDriver { get; set; }
         public string? CarModel { get; set; }  // فقط برای راننده

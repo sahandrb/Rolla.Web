@@ -6,40 +6,48 @@ using System.Security.Claims;
 
 namespace Rolla.Web.Controllers;
 
-[Authorize] // فقط کاربران لاگین شده
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class TripApiController : ControllerBase
 {
     private readonly ITripService _tripService;
+    private readonly IGeoLocationService _geoService; // ۱. فیلد جدید
 
-    public TripApiController(ITripService tripService)
+    // ۲. تزریق وابستگی در سازنده
+    public TripApiController(ITripService tripService, IGeoLocationService geoService)
     {
         _tripService = tripService;
+        _geoService = geoService;
     }
 
     [HttpPost("request")]
     public async Task<IActionResult> RequestTrip([FromBody] CreateTripDto dto)
     {
-        // پیدا کردن آیدی کاربری که لاگین کرده است
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
         if (userId == null) return Unauthorized();
 
         var tripId = await _tripService.CreateTripAsync(dto, userId);
 
-        return Ok(new { Message = "سفر با موفقیت ثبت شد و در انتظار راننده است", TripId = tripId });
+        return Ok(new { Message = "سفر ثبت شد", TripId = tripId });
     }
+
     [HttpGet("nearby")]
     public async Task<IActionResult> GetNearby([FromQuery] double lat, [FromQuery] double lng)
     {
-        // استفاده از سرویسی که برای ردیس نوشتیم
-        var geoService = HttpContext.RequestServices.GetRequiredService<IGeoLocationService>();
-
-        // جستجوی راننده‌ها در شعاع ۱۰ کیلومتری
-        var drivers = await geoService.GetNearbyDriversAsync(lat, lng, 10);
+        // ۳. استفاده از فیلد تزریق شده (حذف HttpContext.RequestServices)
+        var drivers = await _geoService.GetNearbyDriversAsync(lat, lng, 10);
 
         return Ok(new { Count = drivers.Count, DriverIds = drivers });
     }
-}
+    [HttpGet("seed-drivers")]
+    public async Task<IActionResult> SeedDrivers()
+    {
+        // این کد دستی ۳ تا راننده خیالی اطراف تو در ردیس می‌کارد
+        await _geoService.UpdateDriverLocationAsync("Driver_Ali", 35.71, 51.41);
+        await _geoService.UpdateDriverLocationAsync("Driver_Reza", 35.715, 51.415);
+        await _geoService.UpdateDriverLocationAsync("Driver_Sara", 35.72, 51.42);
 
+        return Ok("۳ راننده فرضی در دیتابیس کاشته شدند!");
+    }
+}

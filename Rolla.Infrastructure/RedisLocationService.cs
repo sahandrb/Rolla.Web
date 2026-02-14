@@ -26,15 +26,10 @@ public class RedisLocationService : IGeoLocationService
 
     public async Task<List<string>> GetNearbyDriversAsync(double lat, double lng, double radiusKm)
     {
-        // تعریف شکل جستجو (دایره‌ای با شعاع مشخص)
-        var shape = new GeoSearchCircle(radiusKm, GeoUnit.Kilometers);
-
-        // انجام جستجو: 
-        // ورودی دوم: Longitude (lng)
-        // ورودی سوم: Latitude (lat)
-        // ورودی چهارم: شکل جستجو (shape)
-        var results = await _redis.GeoSearchAsync(RedisKey, lng, lat, shape);
+        // استفاده از متد قدیمی‌تر که با نسخه‌های زیر 6.2 ردیس هم سازگار است
+        var results = await _redis.GeoRadiusAsync(RedisKey, lng, lat, radiusKm, GeoUnit.Kilometers);
 
         return results.Select(r => r.Member.ToString()).ToList()!;
     }
 }
+

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "L1hI/Zq8fL0=",
+  "dgSpecHash": "IcjT26DG+TM=",
   "success": true,
-  "projectFilePath": "E:\\Brooklyn\\Rolla.Infrastructure\\Rolla.Infrastructure.csproj",
+  "projectFilePath": "E:\\Rolla\\Rolla.Infrastructure\\Rolla.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Sun7402\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\Sun7402\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

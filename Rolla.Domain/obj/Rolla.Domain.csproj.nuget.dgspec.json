@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\Brooklyn\\Rolla.Domain\\Rolla.Domain.csproj": {}
+    "E:\\Rolla\\Rolla.Domain\\Rolla.Domain.csproj": {}
   },
   "projects": {
-    "E:\\Brooklyn\\Rolla.Domain\\Rolla.Domain.csproj": {
+    "E:\\Rolla\\Rolla.Domain\\Rolla.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Brooklyn\\Rolla.Domain\\Rolla.Domain.csproj",
+        "projectUniqueName": "E:\\Rolla\\Rolla.Domain\\Rolla.Domain.csproj",
         "projectName": "Rolla.Domain",
-        "projectPath": "E:\\Brooklyn\\Rolla.Domain\\Rolla.Domain.csproj",
+        "projectPath": "E:\\Rolla\\Rolla.Domain\\Rolla.Domain.csproj",
         "packagesPath": "C:\\Users\\Sun7402\\.nuget\\packages\\",
-        "outputPath": "E:\\Brooklyn\\Rolla.Domain\\obj\\",
+        "outputPath": "E:\\Rolla\\Rolla.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

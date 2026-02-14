@@ -4,57 +4,65 @@ using Rolla.Application.Interfaces;
 using Rolla.Application.Services;
 using Rolla.Domain.Entities;
 using Rolla.Infrastructure.Data;
+using Rolla.Infrastructure.Services; // اضافه شد
 using Rolla.Web.Hubs;
 using Rolla.Web.Services;
-
-
+using StackExchange.Redis; // اضافه شد
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. دریافت کانکشن استرینگ
+// 1. تنظیم دیتابیس
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// 2. تنظیم دیتابیس با پشتیبانی از نقشه (NetTopologySuite)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, x =>
-        x.UseNetTopologySuite() // <--- این خط برای محاسبات جی‌پی‌اس حیاتی است
+        x.UseNetTopologySuite()
     ));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// 3. تنظیم سیستم هویت برای استفاده از کاربر سفارشی ما (ApplicationUser)
+// 2. تنظیم Identity
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => {
-    options.SignIn.RequireConfirmedAccount = false; // برای تست فعلاً روی false باشد
-    options.Password.RequireDigit = false;          // تنظیمات پسورد (اختیاری)
+    options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequiredLength = 6;
+    options.Password.RequireDigit = false;
     options.Password.RequireNonAlphanumeric = false;
-
 })
-    .AddRoles<IdentityRole>() // اضافه کردن پشتیبانی از نقش‌ها (راننده/مسافر)
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddControllersWithViews();
 
-// ثبت اینترفیس دیتابیس
+// 3. ثبت سرویس‌های پایه
 builder.Services.AddScoped<IApplicationDbContext>(provider =>
     provider.GetRequiredService<ApplicationDbContext>());
-
-// ثبت سرویس سفر
 builder.Services.AddScoped<ITripService, TripService>();
+
+// 4. ثبت SignalR و نوتیفیکیشن
 builder.Services.AddSignalR();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
+// ---------------------------------------------------------
+// 🚨 بخش گمشده کد شما (اضافه کردن ردیس)
+// ---------------------------------------------------------
+// الف) ایجاد اتصال به Redis
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect("localhost:6379"));
 
-// ۱. ثبت بافر هوشمند (Aggregator) - حتماً Singleton باشد
+// ب) معرفی سرویس لوکیشن به دات‌نت (حل مشکل خطای InvalidOperationException)
+builder.Services.AddScoped<IGeoLocationService, RedisLocationService>();
+// ---------------------------------------------------------
+
+// 5. ثبت بافر و کارگر پس‌زمینه (Aggregation)
 builder.Services.AddSingleton<LocationAggregator>();
-
-// ۲. ثبت کارگر پس‌زمینه (Worker) - برای تخلیه بافر به ردیس
 builder.Services.AddHostedService<LocationUploadService>();
 
 var app = builder.Build();
+
+// 6. تنظیمات Pipeline
 app.UseRouting();
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -62,27 +70,22 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-app.UseRouting();
+app.UseStaticFiles();
 
-app.UseAuthentication(); // احراز هویت
-app.UseAuthorization();  // سطح دسترسی
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapStaticAssets();
 app.MapHub<RideHub>("/rideHub");
 
-
-
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapRazorPages()
-   .WithStaticAssets();
+app.MapRazorPages();
 
 app.Run();

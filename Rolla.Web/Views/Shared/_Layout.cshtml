@@ -46,6 +46,19 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- ۱. اضافه کردن کتابخانه اصلی سیگنال آر (اونی که دانلود کردی یا CDN) -->
+    <!-- اگه فایل رو دستی ریختی تو پوشه lib/signalr از این خط استفاده کن: -->
+    <script src="~/lib/signalr/signalr.js"></script>
+
+
+
+    <!-- یا اگه از CDN استفاده می‌کنی، این خط رو بذار: -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script> -->
+    <!-- ۲. اضافه کردن کد کلاینت خودمان (که پیام‌ها رو مدیریت می‌کنه) -->
+    <script src="~/js/signalr-client.js" asp-append-version="true"></script>
+
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

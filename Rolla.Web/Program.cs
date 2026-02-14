@@ -4,6 +4,8 @@ using Rolla.Application.Interfaces;
 using Rolla.Application.Services;
 using Rolla.Domain.Entities;
 using Rolla.Infrastructure.Data;
+using Rolla.Web.Hubs;
+using Rolla.Web.Services;
 
 
 
@@ -40,9 +42,11 @@ builder.Services.AddScoped<IApplicationDbContext>(provider =>
 
 // ثبت سرویس سفر
 builder.Services.AddScoped<ITripService, TripService>();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 var app = builder.Build();
-
+app.UseRouting();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -62,6 +66,9 @@ app.UseAuthentication(); // احراز هویت
 app.UseAuthorization();  // سطح دسترسی
 
 app.MapStaticAssets();
+app.MapHub<RideHub>("/rideHub");
+
+
 
 app.MapControllerRoute(
     name: "default",

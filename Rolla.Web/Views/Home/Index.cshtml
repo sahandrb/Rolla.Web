@@ -1,8 +1,27 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "نقشه رولا";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-9">
+            <!-- ظرف نقشه -->
+            <div id="map" style="height: 80vh; border-radius: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.1);"></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">وضعیت سیستم</h5>
+                    <p id="status-text" class="text-warning">در حال اتصال به شبکه رولا...</p>
+                    <hr />
+                    <button class="btn btn-primary w-100 mb-2" onclick="requestRide()">درخواست سفر</button>
+                    <div id="driver-count" class="badge bg-info text-dark">راننده‌های فعال: 0</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/map-logic.js"></script>
+}

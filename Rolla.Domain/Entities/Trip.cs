@@ -10,6 +10,7 @@ namespace Rolla.Domain.Entities
 
     public class Trip
     {
+
         public int Id { get; set; }
         public string RiderId { get; set; } = default!; // آیدی مسافر از Identity
         public string? DriverId { get; set; }           // آیدی راننده (ابتدا نال است)

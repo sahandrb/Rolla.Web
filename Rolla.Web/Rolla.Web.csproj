@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <Folder Include="Areas\Admin\" />
-    <Folder Include="Areas\Driver\" />
     <Folder Include="Areas\Rider\" />
   </ItemGroup>
 

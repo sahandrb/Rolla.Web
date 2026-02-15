@@ -50,4 +50,14 @@ public class TripApiController : ControllerBase
 
         return Ok("۳ راننده فرضی در دیتابیس کاشته شدند!");
     }
+    // اضافه کردن این متد به TripApiController
+    [HttpGet("calculate")]
+    public IActionResult CalculatePrice(double oLat, double oLng, double dLat, double dLng)
+    {
+        // اینجا از سرویس PricingService استفاده کن که در مرحله ۱ ساختی
+        // برای سادگی فعلا دستی اینجکت نکن، مستقیم New کن یا بهتره اینجکت کنی
+        var pricingService = HttpContext.RequestServices.GetRequiredService<IPricingService>();
+        var price = pricingService.CalculatePrice(oLat, oLng, dLat, dLng);
+        return Ok(new { Price = price });
+    }
 }

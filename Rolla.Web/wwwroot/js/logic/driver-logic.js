@@ -43,8 +43,11 @@ function startSendingLocation() {
             const { latitude, longitude } = pos.coords;
 
             // به روز رسانی مارکر خود راننده روی نقشه
-            if (userMarker) map.removeLayer(userMarker);
-            userMarker = L.marker([latitude, longitude]).addTo(map);
+            if (userMarker) {
+                userMarker.setLatLng([latitude, longitude]); // حرکت نرم
+            } else {
+                userMarker = L.marker([latitude, longitude]).addTo(map);
+            }
             map.setView([latitude, longitude]);
 
             // ارسال به سرور (بافر)
@@ -54,7 +57,21 @@ function startSendingLocation() {
         }, err => console.error(err), { enableHighAccuracy: true });
     }, 3000); // هر 3 ثانیه
 }
+// دریافت پیشنهاد سفر از سرور
+connection.on("ReceiveTripOffer", function (trip) {
+    // پخش صدای زنگ (اختیاری)
+    // var audio = new Audio('/sounds/alert.mp3'); audio.play();
 
+    document.getElementById('modal-price').innerText = trip.price.toLocaleString() + " تومان";
+
+    // نمایش مودال بوت‌استرپ
+    var myModal = new bootstrap.Modal(document.getElementById('tripModal'));
+    myModal.show();
+});
+
+function acceptTrip() {
+    alert("شما دکمه قبول را زدید! (ادامه در فاز بعدی...)");
+}
 function stopSendingLocation() {
     clearInterval(locationInterval);
 }

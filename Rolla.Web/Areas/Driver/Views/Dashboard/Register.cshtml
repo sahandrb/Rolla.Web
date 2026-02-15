@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "ثبت‌نام راننده";
+}
+
+<div class="container mt-5">
+    <div class="card mx-auto" style="max-width: 500px;">
+        <div class="card-header bg-primary text-white">
+            <h4>فرم ثبت‌نام راننده</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Register" method="post">
+                <div class="mb-3">
+                    <label>مدل خودرو</label>
+                    <input name="carModel" class="form-control" placeholder="مثال: پراید ۱۱۱" required />
+                </div>
+                <div class="mb-3">
+                    <label>پلاک خودرو</label>
+                    <input name="plateNumber" class="form-control" placeholder="مثال: ۱۲ب۳۴۵-۶۷" required />
+                </div>
+                <button type="submit" class="btn btn-success w-100">ارسال مدارک</button>
+            </form>
+        </div>
+    </div>
+</div>

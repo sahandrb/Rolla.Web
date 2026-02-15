@@ -8,6 +8,7 @@ using Rolla.Domain.Enums;
 namespace Rolla.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Route("Admin/[controller]/[action]")] // ✨ این خط را اضافه کنید
     // [Authorize(Roles = "Admin")] // فعلاً کامنت کن تا راحت تست کنی، بعداً فعالش کن
     public class DriverManagementController : Controller
     {

@@ -20,7 +20,24 @@
         </div>
     </div>
 </div>
-
+<!-- Modal درخواست سفر -->
+<div class="modal fade" id="tripModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">🔔 درخواست سفر جدید</h5>
+            </div>
+            <div class="modal-body text-center">
+                <h2 id="modal-price" class="fw-bold"></h2>
+                <p>فاصله تا شما: <span id="modal-dist">...</span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رد کردن</button>
+                <button type="button" class="btn btn-success w-100" onclick="acceptTrip()">✅ قبول سفر</button>
+            </div>
+        </div>
+    </div>
+</div>
 @section Scripts {
     <!-- ۱. هسته نقشه -->
     <script src="~/js/core/map-base.js"></script>

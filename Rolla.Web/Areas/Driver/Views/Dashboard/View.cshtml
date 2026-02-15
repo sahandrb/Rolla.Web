@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "میز کار راننده";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 order-md-2">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5>وضعیت: <span id="status-indicator">آفلاین</span></h5>
+                    <hr />
+                    <button id="btn-toggle" class="btn btn-success w-100" onclick="toggleWork()">
+                        🟢 شروع کار
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9 order-md-1">
+            <div id="map" style="height: 80vh; border-radius: 10px;"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- ۱. هسته نقشه -->
+    <script src="~/js/core/map-base.js"></script>
+    <!-- ۲. منطق اختصاصی راننده -->
+    <script src="~/js/logic/driver-logic.js"></script>
+}

@@ -25,22 +25,29 @@
                     <td>@driver.Email</td>
                     <td>@driver.CarModel</td>
                     <td>@driver.PlateNumber</td>
+                    <!-- ... بقیه کدها ... -->
                     <td>
                         @if (driver.DriverStatus == DriverStatus.Pending)
                         {
-                            <span class="badge bg-warning">در انتظار</span>
-                        }
-                        else if (driver.DriverStatus == DriverStatus.Approved)
-                        {
+                            <!-- دکمه تایید -->
+                            <form asp-area="Admin" asp-controller="DriverManagement" asp-action="Approve" method="post" style="display:inline;">
+                                <input type="hidden" name="userId" value="@driver.Id" />
+                                <button type="submit" class="btn btn-sm btn-success">✅ تایید</button>
+                            </form>
 
-                            <span class="badge bg-success">تایید شده</span>
+                            <!-- دکمه رد -->
+                            <form asp-area="Admin" asp-controller="DriverManagement" asp-action="Reject" method="post" style="display:inline;">
+                                <input type="hidden" name="userId" value="@driver.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger">❌ رد</button>
+                            </form>
                         }
                         else
                         {
-
-                            <span class="badge bg-danger">@driver.DriverStatus</span>
+                            <!-- اگر وضعیت چیزی غیر از Pending بود، دکمه‌ها را نشان نده یا غیرفعال کن -->
+                            <span class="text-muted">عملیات تکمیل شده</span>
                         }
                     </td>
+                    <!-- ... بقیه کدها ... -->
                     <td>
                         @if (driver.DriverStatus == DriverStatus.Pending)
                         {

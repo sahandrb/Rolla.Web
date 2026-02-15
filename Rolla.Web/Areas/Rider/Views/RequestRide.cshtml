@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "درخواست سفر";
+}
+
+<div class="container-fluid">
+    <div id="map" style="height: 85vh; border-radius: 15px;"></div>
+
+    <!-- باکس شناور پایین صفحه -->
+    <div class="fixed-bottom p-3 bg-white border-top shadow" style="border-radius: 20px 20px 0 0;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-6">
+                    <h4 id="price-display" class="text-success fw-bold">0 تومان</h4>
+                    <small class="text-muted">قیمت تقریبی</small>
+                </div>
+                <div class="col-6">
+                    <button id="btn-request" class="btn btn-primary w-100 btn-lg" disabled onclick="submitRequest()">
+                        درخواست اسنپ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/core/map-base.js"></script>
+    <script src="~/js/logic/rider-logic.js"></script>
+}

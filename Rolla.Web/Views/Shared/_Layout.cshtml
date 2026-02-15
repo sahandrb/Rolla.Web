@@ -28,6 +28,15 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+                    <!-- لینک پنل ادمین -->
+                    <li class="nav-item">
+                        <a class="nav-link text-danger fw-bold" asp-area="Admin" asp-controller="DriverManagement" asp-action="Index">پنل ادمین</a>
+                    </li>
+
+                    <!-- لینک ورود راننده -->
+                    <li class="nav-item">
+                        <a class="nav-link text-primary" asp-area="Driver" asp-controller="Dashboard" asp-action="Index">ورود راننده</a>
+                    </li>
                     <partial name="_LoginPartial" />
                 </div>
             </div>

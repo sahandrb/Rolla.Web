@@ -1,43 +1,33 @@
-﻿
+﻿// اضافه کردن اتصال SignalR برای مسافر
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl("/rideHub")
+    .withAutomaticReconnect()
+    .build();
 
-let originMarker = null;
-let destMarker = null;
-let step = 1; // 1: انتخاب مبدا، 2: انتخاب مقصد
+let driverMarker = null;
 
-initMap(); // لود نقشه
+connection.start().then(() => {
+    console.log("Rider Connected to SignalR ✅");
+}).catch(err => console.error(err));
 
-map.on('click', function (e) {
-    if (step === 1) {
-        // انتخاب مبدا
-        if (originMarker) map.removeLayer(originMarker);
-        originMarker = addMarker(e.latlng.lat, e.latlng.lng, "مبدا", "green");
-        step = 2;
-        alert("حالا مقصد را انتخاب کنید");
-    }
-    else if (step === 2) {
-        // انتخاب مقصد
-        if (destMarker) map.removeLayer(destMarker);
-        destMarker = addMarker(e.latlng.lat, e.latlng.lng, "مقصد", "red");
+// گوش دادن به حرکت راننده (این همان متدی است که در RideHub نوشتید)
+connection.on("ReceiveDriverLocation", function (lat, lng) {
+    console.log("موقعیت راننده دریافت شد:", lat, lng);
 
-        // محاسبه قیمت
-        calculatePrice();
-        document.getElementById('btn-request').disabled = false;
+    if (driverMarker) {
+        driverMarker.setLatLng([lat, lng]); // حرکت دادن ماشین راننده روی نقشه مسافر
+    } else {
+        // ایجاد مارکر ماشین راننده برای اولین بار
+        var carIcon = L.icon({
+            iconUrl: '/img/car-icon.png', // یک آیکون ماشین در پوشه img بگذارید
+            iconSize: [32, 32]
+        });
+        driverMarker = L.marker([lat, lng], { icon: carIcon }).addTo(map)
+            .bindPopup("راننده شما").openPopup();
     }
 });
 
-async function calculatePrice() {
-    const o = originMarker.getLatLng();
-    const d = destMarker.getLatLng();
-
-    // فراخوانی API جدیدی که باید بسازیم
-    const res = await fetch(`/api/TripApi/calculate?oLat=${o.lat}&oLng=${o.lng}&dLat=${d.lat}&dLng=${d.lng}`);
-    const data = await res.json();
-
-    document.getElementById('price-display').innerText = data.price.toLocaleString() + " تومان";
-    // ذخیره قیمت در دکمه برای ارسال نهایی
-    document.getElementById('btn-request').setAttribute('data-price', data.price);
-}
-
+// اصلاح تابع ارسال درخواست مسافر
 async function submitRequest() {
     const o = originMarker.getLatLng();
     const d = destMarker.getLatLng();
@@ -56,8 +46,14 @@ async function submitRequest() {
     });
 
     if (res.ok) {
-        alert("✅ درخواست ارسال شد! منتظر راننده باشید...");
-        step = 3; // حالت انتظار
+        const result = await res.json();
+        const tripId = result.tripId; // آیدی سفری که ساخته شد
+
+        alert("✅ درخواست ارسال شد! در حال جستجوی راننده...");
+
+        // مسافر بلافاصله عضو گروه این سفر می‌شود تا به محض قبول راننده، پیام‌ها را بگیرد
+        await connection.invoke("JoinTripGroup", tripId);
+
         document.getElementById('btn-request').innerText = "🔍 در حال جستجو...";
         document.getElementById('btn-request').disabled = true;
     }

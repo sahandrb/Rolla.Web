@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Rolla.Application.DTOs.Trip;
+using Rolla.Domain.Entities; // اضافه شود
+using Rolla.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Rolla.Application.DTOs.Trip;
-using Rolla.Domain.Entities; // اضافه شود
 
 namespace Rolla.Application.Interfaces
 {
@@ -14,5 +15,8 @@ namespace Rolla.Application.Interfaces
 
         // تغییر نوع بازگشتی به ?Trip (یعنی ممکن است نال باشد)
         Task<Trip?> AcceptTripAsync(int tripId, string driverId);
+
+        // تغییر خروجی از bool به string? (که یعنی آیدی مسافر رو برمی‌گردونه)
+        Task<string?> ChangeTripStatusAsync(int tripId, string driverId, Rolla.Domain.Enums.TripStatus newStatus);
     }
 }

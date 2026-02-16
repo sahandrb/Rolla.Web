@@ -89,4 +89,53 @@ public class TripApiController : ControllerBase
 
         return BadRequest("خطا: سفر یافت نشد یا توسط راننده دیگری رزرو شده است.");
     }
+    [HttpPost("arrive/{tripId}")]
+    public async Task<IActionResult> ArriveAtOrigin(int tripId)
+    {
+        var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (driverId == null) return Unauthorized(); // حل وارنینگ CS8604
+
+        // سرویس صدا زده میشه و RiderId رو برمی‌گردونه
+        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, Domain.Enums.TripStatus.Arrived);
+
+        if (riderId == null) return BadRequest("سفر یافت نشد.");
+
+        // خبر دادن به مسافر
+        var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
+        await notif.NotifyStatusChangeAsync(riderId, "راننده رسید! 🚕");
+
+        return Ok(new { Message = "وضعیت شد: رسیدم" });
+    }
+
+    [HttpPost("start/{tripId}")]
+    public async Task<IActionResult> StartTrip(int tripId)
+    {
+        var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (driverId == null) return Unauthorized();
+
+        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, Domain.Enums.TripStatus.Started);
+
+        if (riderId == null) return BadRequest();
+
+        var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
+        await notif.NotifyStatusChangeAsync(riderId, "سفر شروع شد 🚀");
+
+        return Ok(new { Message = "سفر شروع شد" });
+    }
+
+    [HttpPost("finish/{tripId}")]
+    public async Task<IActionResult> FinishTrip(int tripId)
+    {
+        var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (driverId == null) return Unauthorized();
+
+        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, Domain.Enums.TripStatus.Finished);
+
+        if (riderId == null) return BadRequest();
+
+        var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
+        await notif.NotifyStatusChangeAsync(riderId, "سفر به پایان رسید ✅ مبلغ را پرداخت کنید.");
+
+        return Ok(new { Message = "سفر تمام شد" });
+    }
 }

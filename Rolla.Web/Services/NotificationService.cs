@@ -44,4 +44,8 @@ public class NotificationService : INotificationService
             Message = "راننده سفر شما را پذیرفت!"
         });
     }
+    public async Task NotifyStatusChangeAsync(string riderId, string message)
+    {
+        await _hubContext.Clients.Group($"User_{riderId}").SendAsync("ReceiveStatusUpdate", message);
+    }
 }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Rolla.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+942c43567c694c9d8a52bbb7c1b5326f3bb6baa3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8829778ad97c9917471285e54cecb1ff2bcc51e0")]
 [assembly: System.Reflection.AssemblyProductAttribute("Rolla.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Rolla.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

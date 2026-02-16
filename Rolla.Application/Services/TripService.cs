@@ -66,4 +66,18 @@ public class TripService : ITripService
         // کل آبجکت سفر را برمی‌گردانیم تا کنترلر بتواند RiderId را از توش بردارد
         return trip;
     }
+
+    public async Task<string?> ChangeTripStatusAsync(int tripId, string driverId, Rolla.Domain.Enums.TripStatus newStatus)
+    {
+        var trip = await _context.Trips.FindAsync(tripId);
+
+        // اگر سفر نبود یا راننده اشتباه بود، نال برگردان
+        if (trip == null || trip.DriverId != driverId) return null;
+
+        trip.Status = newStatus;
+        await _context.SaveChangesAsync();
+
+        // ✨ آیدی مسافر رو برمی‌گردونیم تا کنترلر بتونه بهش نوتیفیکیشن بده
+        return trip.RiderId;
+    }
 }

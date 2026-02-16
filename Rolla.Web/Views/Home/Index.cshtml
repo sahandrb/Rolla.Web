@@ -10,12 +10,14 @@
         </div>
         <div class="col-md-3">
             <div class="card">
+                <!-- این بخش را در فایل Views/Home/Index.cshtml پیدا و اصلاح کنید -->
                 <div class="card-body">
-                    <h5 class="card-title">وضعیت سیستم</h5>
-                    <p id="status-text" class="text-warning">در حال اتصال به شبکه رولا...</p>
+                    <h5 class="card-title">خوش آمدید</h5>
+                    <p>برای شروع یکی از گزینه‌های زیر را انتخاب کنید:</p>
                     <hr />
-                    <button class="btn btn-primary w-100 mb-2" onclick="requestRide()">درخواست سفر</button>
-                    <div id="driver-count" class="badge bg-info text-dark">راننده‌های فعال: 0</div>
+                    <!-- به جای دکمه onclick، از یک لینک واقعی استفاده کنید -->
+                    <a href="/Rider/Ride/RequestRide" class="btn btn-primary w-100 mb-2">🙋 درخواست سفر (مسافر)</a>
+                    <a href="/Driver/Dashboard/Index" class="btn btn-success w-100">🚕 پنل راننده</a>
                 </div>
             </div>
         </div>

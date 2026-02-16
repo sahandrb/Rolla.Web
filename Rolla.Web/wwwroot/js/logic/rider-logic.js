@@ -1,60 +1,46 @@
-﻿// اضافه کردن اتصال SignalR برای مسافر
+﻿// wwwroot/js/logic/rider-logic.js
+
+// تمام متغیرها را ابتدای فایل تعریف کن
+let originMarker = null;
+let destMarker = null;
+let step = 1;
+let driverMarker = null;
+
+// ۱. اول نقشه را لود کن (قبل از هر کار دیگری)
+document.addEventListener("DOMContentLoaded", function () {
+    initMap(); // فراخوانی از map-base.js
+
+    // ۲. تعریف رویداد کلیک بعد از لود نقشه
+    map.on('click', function (e) {
+        if (step === 1) {
+            if (originMarker) map.removeLayer(originMarker);
+            originMarker = addMarker(e.latlng.lat, e.latlng.lng, "مبدا شما");
+            step = 2;
+            alert("حالا مقصد را روی نقشه انتخاب کنید");
+        }
+        else if (step === 2) {
+            if (destMarker) map.removeLayer(destMarker);
+            destMarker = addMarker(e.latlng.lat, e.latlng.lng, "مقصد شما");
+            calculatePrice();
+            document.getElementById('btn-request').disabled = false;
+        }
+    });
+});
+
+// ۳. اتصال به SignalR را در یک بلاک جداگانه بگذار که اگر خطا داد نقشه را خراب نکند
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/rideHub")
     .withAutomaticReconnect()
     .build();
 
-let driverMarker = null;
+connection.start().catch(err => console.error("SignalR Connection Error: ", err));
 
-connection.start().then(() => {
-    console.log("Rider Connected to SignalR ✅");
-}).catch(err => console.error(err));
-
-// گوش دادن به حرکت راننده (این همان متدی است که در RideHub نوشتید)
 connection.on("ReceiveDriverLocation", function (lat, lng) {
-    console.log("موقعیت راننده دریافت شد:", lat, lng);
-
     if (driverMarker) {
-        driverMarker.setLatLng([lat, lng]); // حرکت دادن ماشین راننده روی نقشه مسافر
+        driverMarker.setLatLng([lat, lng]);
     } else {
-        // ایجاد مارکر ماشین راننده برای اولین بار
-        var carIcon = L.icon({
-            iconUrl: '/img/car-icon.png', // یک آیکون ماشین در پوشه img بگذارید
-            iconSize: [32, 32]
-        });
-        driverMarker = L.marker([lat, lng], { icon: carIcon }).addTo(map)
-            .bindPopup("راننده شما").openPopup();
+        driverMarker = L.marker([lat, lng]).addTo(map).bindPopup("راننده").openPopup();
     }
 });
 
-// اصلاح تابع ارسال درخواست مسافر
-async function submitRequest() {
-    const o = originMarker.getLatLng();
-    const d = destMarker.getLatLng();
-    const price = document.getElementById('btn-request').getAttribute('data-price');
-
-    const dto = {
-        originLat: o.lat, originLng: o.lng,
-        destinationLat: d.lat, destinationLng: d.lng,
-        estimatedPrice: parseFloat(price)
-    };
-
-    const res = await fetch('/api/TripApi/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dto)
-    });
-
-    if (res.ok) {
-        const result = await res.json();
-        const tripId = result.tripId; // آیدی سفری که ساخته شد
-
-        alert("✅ درخواست ارسال شد! در حال جستجوی راننده...");
-
-        // مسافر بلافاصله عضو گروه این سفر می‌شود تا به محض قبول راننده، پیام‌ها را بگیرد
-        await connection.invoke("JoinTripGroup", tripId);
-
-        document.getElementById('btn-request').innerText = "🔍 در حال جستجو...";
-        document.getElementById('btn-request').disabled = true;
-    }
-}
+// بقیه توابع (submitRequest و calculatePrice) همان قبلی باشند...

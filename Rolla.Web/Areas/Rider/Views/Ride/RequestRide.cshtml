@@ -22,7 +22,18 @@
         </div>
     </div>
 </div>
+<style>
+    /* مطمئن شویم نقشه فضا را پر می‌کند */
+    #map {
+        width: 100%;
+        background-color: #eee; /* اگر نقشه لود نشود، باید خاکستری دیده شود نه سفید */
+        z-index: 1;
+    }
 
+    .fixed-bottom {
+        z-index: 1000; /* دکمه‌ها روی نقشه باشند */
+    }
+</style>
 @section Scripts {
     <script src="~/js/core/map-base.js"></script>
     <script src="~/js/logic/rider-logic.js"></script>

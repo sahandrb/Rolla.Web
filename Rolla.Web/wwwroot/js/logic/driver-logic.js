@@ -78,8 +78,6 @@ connection.on("ReceiveTripOffer", function (trip) {
     var myModal = new bootstrap.Modal(document.getElementById('tripModal'));
     myModal.show();
 });
-
-// ۴. پذیرش سفر (نسخه نهایی)
 async function acceptTrip() {
     try {
         const res = await fetch(`/api/TripApi/accept/${currentOfferId}`, {
@@ -89,25 +87,21 @@ async function acceptTrip() {
         if (res.ok) {
             alert("✅ سفر قبول شد! حالا باید به سمت مسافر بروید.");
 
-            // مخفی کردن مودال
             const modalElement = document.getElementById('tripModal');
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
-            modalInstance.hide();
+            if (modalInstance) modalInstance.hide();
 
-            // فعال کردن حالت "در سفر"
             isWorkingOnTrip = true;
             activeTripId = currentOfferId;
 
-            // به راننده بگوییم در گروه سفر در SignalR عضو شود
             await connection.invoke("JoinTripGroup", activeTripId);
-
         } else {
             alert("❌ متاسفانه سفر منقضی شده یا توسط راننده دیگری گرفته شده است.");
         }
     } catch (err) {
         console.error("Error accepting trip:", err);
     }
-}
+} // <--- مطمئن شو این آکولاد بسته شده است
 
 // شروع اولیه
 initMap();

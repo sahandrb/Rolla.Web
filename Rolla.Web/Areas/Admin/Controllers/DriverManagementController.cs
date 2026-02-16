@@ -29,22 +29,20 @@ namespace Rolla.Web.Areas.Admin.Controllers
             return View(drivers);
         }
         [HttpPost]
-        public async Task<IActionResult> Approve([FromForm] string userId) // ۱. اضافه کردن FromForm
+        public async Task<IActionResult> Approve([FromForm] string userId)
         {
-            if (string.IsNullOrEmpty(userId)) return RedirectToAction("Index");
-
             var user = await _userManager.FindByIdAsync(userId);
             if (user != null)
             {
                 user.DriverStatus = DriverStatus.Approved;
+                user.IsDriver = true; // تایید فنی
 
-                // ۲. اجبار به آپدیت و ذخیره تغییرات
-                var result = await _userManager.UpdateAsync(user);
+                await _userManager.UpdateAsync(user);
 
-                if (!result.Succeeded)
+                // اضافه کردن نقش سیستمی برای امنیت [Authorize]
+                if (!await _userManager.IsInRoleAsync(user, "Driver"))
                 {
-                    // اگر خطایی رخ داد (مثلاً مشکل دیتابیس)، اینجا لاگ کن
-                    // فعلاً برای سادگی چیزی برنمی‌گردانیم
+                    await _userManager.AddToRoleAsync(user, "Driver");
                 }
             }
             return RedirectToAction("Index");

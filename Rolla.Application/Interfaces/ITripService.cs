@@ -10,5 +10,6 @@ namespace Rolla.Application.Interfaces
     public interface ITripService
     {
         Task<int> CreateTripAsync(CreateTripDto dto, string riderId);
+        Task<bool> AcceptTripAsync(int tripId, string driverId); // ✨ اضافه شد
     }
 }

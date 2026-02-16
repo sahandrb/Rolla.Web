@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Rolla.Application.DTOs.Trip;
 using Rolla.Application.Interfaces;
 using System.Security.Claims;
@@ -63,16 +64,29 @@ public class TripApiController : ControllerBase
     [HttpPost("accept/{tripId}")]
     public async Task<IActionResult> AcceptTrip(int tripId)
     {
+        // دریافت آیدی راننده از توکن
         var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var result = await _tripService.AcceptTripAsync(tripId, driverId);
 
-        if (result)
+        // حل خطای Null Reference: اگر راننده لاگین نبود یا آیدی نداشت
+        if (string.IsNullOrEmpty(driverId))
         {
-            // در اینجا به مسافر خبر می‌دهیم که راننده پیدا شد
-            // فعلاً برای سادگی فقط تاییدیه برمی‌گردانیم
-            return Ok(new { Message = "سفر به شما اختصاص یافت" });
+            return Unauthorized("شما باید لاگین باشید.");
         }
 
-        return BadRequest("خطا: شاید راننده دیگری زودتر سفر را گرفته است.");
+        // سرویس صدا زده می‌شود و نتیجه (سفر آپدیت شده) برمی‌گردد
+        var acceptedTrip = await _tripService.AcceptTripAsync(tripId, driverId);
+
+        if (acceptedTrip != null)
+        {
+            // حالا که سفر تایید شده، RiderId را داریم و می‌توانیم نوتیفیکیشن بفرستیم
+            // نکته: INotificationService باید در سازنده تزریق شده باشد، یا اینجا دستی بگیریم
+            var notifService = HttpContext.RequestServices.GetRequiredService<INotificationService>();
+
+            await notifService.NotifyTripAcceptedAsync(tripId, acceptedTrip.RiderId, driverId);
+
+            return Ok(new { Message = "سفر به شما اختصاص یافت", RiderId = acceptedTrip.RiderId });
+        }
+
+        return BadRequest("خطا: سفر یافت نشد یا توسط راننده دیگری رزرو شده است.");
     }
 }

@@ -147,3 +147,18 @@ async function submitRequest() {
         btn.innerText = "تلاش مجدد";
     }
 }
+// دریافت پیام قبول شدن سفر
+connection.on("TripAccepted", function (data) {
+    console.log("Driver Found!", data);
+
+    // ۱. تغییر متن دکمه و غیرفعال کردن
+    const btn = document.getElementById('btn-request');
+    btn.className = "btn btn-success w-100 btn-lg";
+    btn.innerText = `🚗 راننده پیدا شد! (${data.driverId})`;
+
+    // ۲. نمایش نوتیفیکیشن
+    alert(data.message);
+
+    // ۳. عضویت در گروه سفر برای دیدن حرکت زنده راننده
+    connection.invoke("JoinTripGroup", data.tripId);
+});

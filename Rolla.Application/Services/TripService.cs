@@ -50,18 +50,20 @@ public class TripService : ITripService
 
         return trip.Id;
     }
-    public async Task<bool> AcceptTripAsync(int tripId, string driverId)
+    public async Task<Trip?> AcceptTripAsync(int tripId, string driverId)
     {
         var trip = await _context.Trips.FindAsync(tripId);
 
-        // فقط سفری که در حال جستجو است قابل قبول است
+        // اگر سفر نبود یا قبلاً گرفته شده بود، نال برگردان
         if (trip == null || trip.Status != TripStatus.Searching)
-            return false;
+            return null;
 
         trip.DriverId = driverId;
         trip.Status = TripStatus.Accepted;
 
         await _context.SaveChangesAsync();
-        return true;
+
+        // کل آبجکت سفر را برمی‌گردانیم تا کنترلر بتواند RiderId را از توش بردارد
+        return trip;
     }
 }

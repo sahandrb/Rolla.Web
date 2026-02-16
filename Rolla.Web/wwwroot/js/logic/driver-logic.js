@@ -78,6 +78,7 @@ connection.on("ReceiveTripOffer", function (trip) {
     var myModal = new bootstrap.Modal(document.getElementById('tripModal'));
     myModal.show();
 });
+
 async function acceptTrip() {
     try {
         const res = await fetch(`/api/TripApi/accept/${currentOfferId}`, {
@@ -85,23 +86,44 @@ async function acceptTrip() {
         });
 
         if (res.ok) {
-            alert("✅ سفر قبول شد! حالا باید به سمت مسافر بروید.");
-
+            // ۱. بستن مودال
             const modalElement = document.getElementById('tripModal');
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
             if (modalInstance) modalInstance.hide();
 
+            // ۲. تغییر متغیرهای وضعیت
             isWorkingOnTrip = true;
             activeTripId = currentOfferId;
 
+            // ۳. تغییر UI (نمایش پنل سفر)
+            showTripInfoPanel();
+
+            // ۴. عضویت در گروه سفر برای ارسال لوکیشن دقیق
             await connection.invoke("JoinTripGroup", activeTripId);
+
         } else {
-            alert("❌ متاسفانه سفر منقضی شده یا توسط راننده دیگری گرفته شده است.");
+            alert("❌ متاسفانه سفر توسط راننده دیگری رزرو شد.");
         }
     } catch (err) {
         console.error("Error accepting trip:", err);
     }
-} // <--- مطمئن شو این آکولاد بسته شده است
+}
+
+function showTripInfoPanel() {
+    // تغییر پنل سمت راست یا پایین
+    const statusDiv = document.querySelector('.card-body');
+    statusDiv.innerHTML = `
+        <h4 class="text-success">🚀 در سفر</h4>
+        <p>در حال حرکت به سمت مسافر...</p>
+        <button class="btn btn-primary w-100 mb-2" onclick="openWaze()">مسیریابی (Waze)</button>
+        <button class="btn btn-warning w-100">رسیدم به مبدا</button>
+    `;
+}
+
+function openWaze() {
+    // اینجا باید مختصات مسافر رو داشته باشیم (فعلا هاردکد شده)
+    window.open("https://waze.com/ul?ll=35.71,51.41&navigate=yes");
+}
 
 // شروع اولیه
 initMap();

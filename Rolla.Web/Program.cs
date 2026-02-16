@@ -70,7 +70,7 @@ builder.Services.AddSingleton<LocationAggregator>();
 // کارگر تخلیه بافر به دیتابیس/ردیس
 builder.Services.AddHostedService<LocationUploadService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
-
+builder.Services.AddScoped<IWalletService, WalletService>();
 
 var app = builder.Build();
 

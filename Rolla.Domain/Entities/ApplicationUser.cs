@@ -17,5 +17,6 @@ namespace Rolla.Domain.Entities
 
         public string? CarModel { get; set; }
         public string? PlateNumber { get; set; }
+        public decimal WalletBalance { get; set; } = 0; // موجودی فعلی (Cache شده)
     }
 }

@@ -34,4 +34,14 @@ public class NotificationService : INotificationService
             });
         }
     }
+    public async Task NotifyTripAcceptedAsync(int tripId, string riderId, string driverId)
+    {
+        // به مسافر خبر می‌دهیم (گروه User_RiderId)
+        await _hubContext.Clients.Group($"User_{riderId}").SendAsync("TripAccepted", new
+        {
+            TripId = tripId,
+            DriverId = driverId,
+            Message = "راننده سفر شما را پذیرفت!"
+        });
+    }
 }

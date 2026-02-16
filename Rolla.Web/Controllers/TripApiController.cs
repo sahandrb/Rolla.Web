@@ -60,4 +60,19 @@ public class TripApiController : ControllerBase
         var price = pricingService.CalculatePrice(oLat, oLng, dLat, dLng);
         return Ok(new { Price = price });
     }
+    [HttpPost("accept/{tripId}")]
+    public async Task<IActionResult> AcceptTrip(int tripId)
+    {
+        var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var result = await _tripService.AcceptTripAsync(tripId, driverId);
+
+        if (result)
+        {
+            // در اینجا به مسافر خبر می‌دهیم که راننده پیدا شد
+            // فعلاً برای سادگی فقط تاییدیه برمی‌گردانیم
+            return Ok(new { Message = "سفر به شما اختصاص یافت" });
+        }
+
+        return BadRequest("خطا: شاید راننده دیگری زودتر سفر را گرفته است.");
+    }
 }

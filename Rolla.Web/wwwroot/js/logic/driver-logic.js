@@ -108,17 +108,57 @@ async function acceptTrip() {
         console.error("Error accepting trip:", err);
     }
 }
-
 function showTripInfoPanel() {
-    // تغییر پنل سمت راست یا پایین
     const statusDiv = document.querySelector('.card-body');
     statusDiv.innerHTML = `
         <h4 class="text-success">🚀 در سفر</h4>
-        <p>در حال حرکت به سمت مسافر...</p>
-        <button class="btn btn-primary w-100 mb-2" onclick="openWaze()">مسیریابی (Waze)</button>
-        <button class="btn btn-warning w-100">رسیدم به مبدا</button>
+        <div id="trip-actions">
+            <button class="btn btn-warning w-100 mb-2" onclick="sendArrived()">📍 رسیدم به مبدا</button>
+        </div>
+        <hr/>
+        <!-- دکمه تست برای حرکت خودکار -->
+        <button class="btn btn-dark w-100 mb-2" onclick="startSimulation()">🎮 شبیه‌سازی حرکت (تست)</button>
+        <button class="btn btn-outline-primary w-100" onclick="openWaze()">مسیریابی (Waze)</button>
     `;
 }
+
+// === شبیه‌ساز حرکت (فقط برای تست) ===
+let simulationInterval;
+
+function startSimulation() {
+    // نقطه شروع (مثلاً میدان آزادی)
+    let lat = 35.71;
+    let lng = 51.41;
+
+    // جهت حرکت (کمی کج حرکت کند تا طبیعی‌تر باشد)
+    const stepLat = 0.00015;
+    const stepLng = 0.00015;
+
+    alert("🎮 شبیه‌سازی حرکت شروع شد! به پنل مسافر بروید.");
+
+    // جلوگیری از اجرای همزمان چند شبیه‌ساز
+    if (simulationInterval) clearInterval(simulationInterval);
+
+    simulationInterval = setInterval(() => {
+        lat += stepLat;
+        lng += stepLng;
+
+        // ۱. آپدیت آنی نقشه خود راننده (راننده نیاز به انیمیشن ندارد، GPS خودش است)
+        if (userMarker) {
+            userMarker.setLatLng([lat, lng]);
+        } else {
+            userMarker = L.marker([lat, lng]).addTo(map);
+        }
+        map.panTo([lat, lng]); // دوربین دنبال ماشین برود
+
+        // ۲. ارسال به سرور
+        if (isWorkingOnTrip && activeTripId) {
+            connection.invoke("UpdateDriverLocation", lat, lng, activeTripId)
+                .catch(err => console.error(err));
+        }
+    }, 1000); // ارسال هر ۱۰۰۰ میلی‌ثانیه (۱ ثانیه)
+}
+
 
 function openWaze() {
     // اینجا باید مختصات مسافر رو داشته باشیم (فعلا هاردکد شده)

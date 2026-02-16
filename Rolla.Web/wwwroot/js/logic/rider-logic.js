@@ -50,15 +50,77 @@ connection.start().then(() => {
     console.log("Rider Connected to SignalR ✅");
 }).catch(err => console.error("SignalR Error:", err));
 
-// دریافت لوکیشن راننده
-connection.on("ReceiveDriverLocation", function (lat, lng) {
-    if (driverMarker) {
-        driverMarker.setLatLng([lat, lng]);
-    } else {
-        // اگر آیکون ماشین نداری، فعلا مارکر معمولی می‌گذاریم
-        driverMarker = L.marker([lat, lng]).addTo(map).bindPopup("🚖 راننده").openPopup();
-    }
+
+
+
+
+// تعریف آیکون ماشین
+// متغیرهای وضعیت برای انیمیشن
+let lastUpdateTimestamp = 0;
+let animationFrameId = null;
+
+// آیکون ماشین
+const carIcon = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/744/744465.png',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20]
 });
+
+connection.on("ReceiveDriverLocation", function (targetLat, targetLng) {
+    const now = Date.now();
+
+    // اگر اولین بار است که لوکیشن می‌گیریم
+    if (!driverMarker) {
+        driverMarker = L.marker([targetLat, targetLng], { icon: carIcon }).addTo(map)
+            .bindPopup("🚖 راننده").openPopup();
+        lastUpdateTimestamp = now;
+        return;
+    }
+
+    // محاسبه زمان سپری شده از آخرین آپدیت (برای پیش‌بینی سرعت)
+    // اگر تاخیر شبکه داشتیم، حداقل ۱ ثانیه را در نظر می‌گیریم تا حرکت خیلی سریع نشود
+    let duration = now - lastUpdateTimestamp;
+    if (duration < 1000) duration = 1000; // Minimum 1 second smoothing
+    lastUpdateTimestamp = now;
+
+    // شروع انیمیشن نرم به سمت نقطه جدید
+    animateMarker(targetLat, targetLng, duration);
+});
+
+// === تابع ریاضی برای حرکت نرم (Interpolation) ===
+function animateMarker(targetLat, targetLng, duration) {
+    const startLatLng = driverMarker.getLatLng();
+    const startTime = performance.now();
+
+    // اگر انیمیشن قبلی هنوز تمام نشده، کنسلش کن تا تداخل پیش نیاید
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+    function step(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1); // عدد بین 0 تا 1
+
+        // فرمول ریاضی: نقطه فعلی + (اختلاف * درصد پیشرفت)
+        const currentLat = startLatLng.lat + (targetLat - startLatLng.lat) * progress;
+        const currentLng = startLatLng.lng + (targetLng - startLatLng.lng) * progress;
+
+        driverMarker.setLatLng([currentLat, currentLng]);
+
+        // اگر هنوز به مقصد نرسیده، فریم بعدی را درخواست کن
+        if (progress < 1) {
+            animationFrameId = requestAnimationFrame(step);
+        } else {
+            animationFrameId = null;
+        }
+    }
+
+    requestAnimationFrame(step);
+}
+
+
+
+
+
 
 // ۳. تابع محاسبه قیمت (در دسترس سراسری)
 async function calculatePrice() {

@@ -66,5 +66,37 @@ namespace Rolla.Application.Services
             var user = await _context.Users.FindAsync(userId);
             return user?.WalletBalance ?? 0;
         }
+        // ... (متدهای قبلی سر جایشان بمانند) ...
+
+        // ۱. متد شارژ دستی (شبیه‌ساز درگاه بانک)
+        public async Task ChargeWalletAsync(string userId, decimal amount, string description)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) throw new Exception("User not found");
+
+            // افزایش موجودی
+            user.WalletBalance += amount;
+
+            // ثبت تراکنش
+            _context.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = userId,
+                Amount = amount,
+                Type = TransactionType.Deposit,
+                Description = description,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+        }
+
+        // ۲. متد دریافت تاریخچه (جدیدترین‌ها اول)
+        public async Task<List<WalletTransaction>> GetUserTransactionsAsync(string userId)
+        {
+            return await _context.WalletTransactions
+                .Where(t => t.UserId == userId)
+                .OrderByDescending(t => t.CreatedAt) // نزولی بر اساس زمان
+                .ToListAsync();
+        }
     }
 }

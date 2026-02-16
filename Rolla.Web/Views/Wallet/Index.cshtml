@@ -1,0 +1,90 @@
+﻿@using Rolla.Domain.Entities
+@model List<WalletTransaction>
+
+@{
+    ViewData["Title"] = "کیف پول من";
+}
+
+<div class="container mt-4">
+    <!-- بخش بالایی: کارت موجودی -->
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <div class="card bg-primary text-white text-center shadow">
+                <div class="card-body py-5">
+                    <h3>موجودی فعلی</h3>
+                    <h1 class="display-4 fw-bold">@(((decimal)ViewBag.Balance).ToString("N0")) <span class="fs-5">تومان</span></h1>
+                </div>
+                <div class="card-footer bg-white">
+                    <!-- فرم شارژ -->
+                    <form asp-action="Charge" method="post" class="row g-2 align-items-center justify-content-center py-2">
+                        <div class="col-auto">
+                            <input type="number" name="amount" class="form-control" placeholder="مبلغ (تومان)" value="50000" min="1000" required>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-success fw-bold">💳 شارژ حساب</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- پیام‌های خطا یا موفقیت -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success text-center">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger text-center">@TempData["Error"]</div>
+    }
+
+    <!-- بخش پایینی: تاریخچه تراکنش‌ها -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">📜 تاریخچه تراکنش‌ها</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>نوع</th>
+                        <th>مبلغ</th>
+                        <th>توضیحات</th>
+                        <th>تاریخ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var isDeposit = item.Amount > 0;
+                        <tr>
+                            <td>
+                                @if (isDeposit)
+                                {
+                                    <span class="badge bg-success">واریز</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge bg-danger">برداشت</span>
+                                }
+                            </td>
+                            <td class="@(isDeposit ? "text-success" : "text-danger") fw-bold" dir="ltr">
+                                @(item.Amount.ToString("N0"))
+                            </td>
+                            <td>@item.Description</td>
+                            <td class="text-muted small">@item.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">هنوز تراکنشی ندارید!</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

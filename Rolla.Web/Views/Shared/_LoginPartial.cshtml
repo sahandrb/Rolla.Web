@@ -9,9 +9,10 @@
         // دریافت اطلاعات کامل کاربر از دیتابیس برای دسترسی به WalletBalance
         var user = await UserManager.GetUserAsync(User);
 
+      
         <li class="nav-item">
-            <a class="nav-link text-primary fw-bold" style="cursor:default">
-                💰 موجودی: @(user?.WalletBalance.ToString("N0") ?? "0") تومان
+            <a class="nav-link text-primary fw-bold" asp-controller="Wallet" asp-action="Index">
+                💰 موجودی: @(user?.WalletBalance.ToString("N0") ?? "0")
             </a>
         </li>
 

@@ -2,11 +2,14 @@
 
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/rideHub")
-    .withAutomaticReconnect([0, 2000, 10000, 30000]) // بازتلاش هوشمند
+    .withAutomaticReconnect([0, 2000, 10000, 30000])
     .build();
 
 let isOnline = false;
 let locationInterval;
+let currentOfferId = null;
+let isWorkingOnTrip = false; // آیا در حال انجام سفر هستیم؟
+let activeTripId = null;    // آیدی سفری که قبول کردیم
 
 async function startSignalR() {
     try {
@@ -42,40 +45,70 @@ function startSendingLocation() {
         navigator.geolocation.getCurrentPosition(pos => {
             const { latitude, longitude } = pos.coords;
 
-            // به روز رسانی مارکر خود راننده روی نقشه
+            // ۱. بروزرسانی مارکر راننده روی نقشه خودش
             if (userMarker) {
-                userMarker.setLatLng([latitude, longitude]); // حرکت نرم
+                userMarker.setLatLng([latitude, longitude]);
             } else {
                 userMarker = L.marker([latitude, longitude]).addTo(map);
             }
             map.setView([latitude, longitude]);
 
-            // ارسال به سرور (بافر)
-            connection.invoke("UpdateDriverLocation", latitude, longitude, null)
+            // ۲. ارسال مختصات به سرور
+            // اگر در حال سفر هستیم، آیدی سفر را هم می‌فرستیم تا مسافر ببیند
+            const tripIdToSend = isWorkingOnTrip ? activeTripId : null;
+
+            connection.invoke("UpdateDriverLocation", latitude, longitude, tripIdToSend)
                 .catch(err => console.error(err));
 
         }, err => console.error(err), { enableHighAccuracy: true });
-    }, 3000); // هر 3 ثانیه
+    }, 3000);
 }
-// دریافت پیشنهاد سفر از سرور
-connection.on("ReceiveTripOffer", function (trip) {
-    // پخش صدای زنگ (اختیاری)
-    // var audio = new Audio('/sounds/alert.mp3'); audio.play();
 
+function stopSendingLocation() {
+    clearInterval(locationInterval);
+    isWorkingOnTrip = false;
+    activeTripId = null;
+}
+
+// ۳. دریافت پیشنهاد سفر
+connection.on("ReceiveTripOffer", function (trip) {
+    currentOfferId = trip.tripId;
     document.getElementById('modal-price').innerText = trip.price.toLocaleString() + " تومان";
 
-    // نمایش مودال بوت‌استرپ
     var myModal = new bootstrap.Modal(document.getElementById('tripModal'));
     myModal.show();
 });
 
-function acceptTrip() {
-    alert("شما دکمه قبول را زدید! (ادامه در فاز بعدی...)");
-}
-function stopSendingLocation() {
-    clearInterval(locationInterval);
+// ۴. پذیرش سفر (نسخه نهایی)
+async function acceptTrip() {
+    try {
+        const res = await fetch(`/api/TripApi/accept/${currentOfferId}`, {
+            method: 'POST'
+        });
+
+        if (res.ok) {
+            alert("✅ سفر قبول شد! حالا باید به سمت مسافر بروید.");
+
+            // مخفی کردن مودال
+            const modalElement = document.getElementById('tripModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            modalInstance.hide();
+
+            // فعال کردن حالت "در سفر"
+            isWorkingOnTrip = true;
+            activeTripId = currentOfferId;
+
+            // به راننده بگوییم در گروه سفر در SignalR عضو شود
+            await connection.invoke("JoinTripGroup", activeTripId);
+
+        } else {
+            alert("❌ متاسفانه سفر منقضی شده یا توسط راننده دیگری گرفته شده است.");
+        }
+    } catch (err) {
+        console.error("Error accepting trip:", err);
+    }
 }
 
-// شروع
-initMap(); // از map-base.js می‌آید
+// شروع اولیه
+initMap();
 startSignalR();

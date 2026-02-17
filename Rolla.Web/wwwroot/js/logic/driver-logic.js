@@ -108,19 +108,79 @@ async function acceptTrip() {
         console.error("Error accepting trip:", err);
     }
 }
-function showTripInfoPanel() {
+// این تابع UI پنل راننده را بر اساس وضعیت سفر تغییر می‌دهد
+function showTripInfoPanel(status = 'Accepted') {
     const statusDiv = document.querySelector('.card-body');
+
+    let actionButtons = '';
+
+    if (status === 'Accepted') {
+        actionButtons = `<button class="btn btn-warning w-100 mb-2" onclick="sendArrived()">📍 رسیدم به مبدا</button>`;
+    } else if (status === 'Arrived') {
+        actionButtons = `<button class="btn btn-primary w-100 mb-2" onclick="sendStart()">🚀 شروع سفر</button>`;
+    } else if (status === 'Started') {
+        actionButtons = `<button class="btn btn-danger w-100 mb-2" onclick="sendFinish()">🏁 پایان سفر و دریافت پول</button>`;
+    }
+
     statusDiv.innerHTML = `
-        <h4 class="text-success">🚀 در سفر</h4>
-        <div id="trip-actions">
-            <button class="btn btn-warning w-100 mb-2" onclick="sendArrived()">📍 رسیدم به مبدا</button>
+        <h4 class="text-success">وضعیت: ${getStatusText(status)}</h4>
+        <div id="trip-actions" class="mt-3">
+            ${actionButtons}
         </div>
         <hr/>
-        <!-- دکمه تست برای حرکت خودکار -->
-        <button class="btn btn-dark w-100 mb-2" onclick="startSimulation()">🎮 شبیه‌سازی حرکت (تست)</button>
-        <button class="btn btn-outline-primary w-100" onclick="openWaze()">مسیریابی (Waze)</button>
+        <button class="btn btn-dark w-100 mb-2" onclick="startSimulation()">🎮 شبیه‌سازی حرکت</button>
+        <button class="btn btn-outline-secondary w-100" onclick="openWaze()">مسیریابی</button>
     `;
 }
+
+function getStatusText(status) {
+    switch (status) {
+        case 'Accepted': return 'در مسیر مبدا';
+        case 'Arrived': return 'منتظر مسافر';
+        case 'Started': return 'در حال سفر به مقصد';
+        default: return status;
+    }
+}
+
+// 1. تابع رسیدم به مبدا
+async function sendArrived() {
+    try {
+        const res = await fetch(`/api/TripApi/arrive/${activeTripId}`, { method: 'POST' });
+        if (res.ok) {
+            showTripInfoPanel('Arrived');
+            alert("به مسافر اطلاع داده شد که رسیدید.");
+        }
+    } catch (err) { console.error(err); }
+}
+
+// 2. تابع شروع سفر
+async function sendStart() {
+    try {
+        const res = await fetch(`/api/TripApi/start/${activeTripId}`, { method: 'POST' });
+        if (res.ok) {
+            showTripInfoPanel('Started');
+            alert("سفر شروع شد! به سمت مقصد برانید.");
+        }
+    } catch (err) { console.error(err); }
+}
+
+// 3. تابع پایان سفر
+async function sendFinish() {
+    if (!confirm("آیا مطمئن هستید سفر تمام شده؟ هزینه از کیف پول مسافر کسر می‌شود.")) return;
+
+    try {
+        const res = await fetch(`/api/TripApi/finish/${activeTripId}`, { method: 'POST' });
+        if (res.ok) {
+            alert("✅ سفر با موفقیت تمام شد و هزینه دریافت شد.");
+            // بازنشانی صفحه برای سفر بعدی
+            location.reload();
+        } else {
+            const err = await res.json();
+            alert("❌ خطا: " + err.message);
+        }
+    } catch (err) { console.error(err); }
+}
+
 
 // === شبیه‌ساز حرکت (فقط برای تست) ===
 let simulationInterval;

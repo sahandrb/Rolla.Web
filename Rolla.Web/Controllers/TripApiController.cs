@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Rolla.Application.DTOs.Trip;
 using Rolla.Application.Interfaces;
+using Rolla.Application.Services;
+using Rolla.Domain.Enums;
 using System.Security.Claims;
 
 namespace Rolla.Web.Controllers;
@@ -14,12 +16,14 @@ public class TripApiController : ControllerBase
 {
     private readonly ITripService _tripService;
     private readonly IGeoLocationService _geoService; // ۱. فیلد جدید
+    private readonly IWalletService _walletService;
 
     // ۲. تزریق وابستگی در سازنده
-    public TripApiController(ITripService tripService, IGeoLocationService geoService)
+    public TripApiController(ITripService tripService, IGeoLocationService geoService , IWalletService walletService)
     {
         _tripService = tripService;
         _geoService = geoService;
+        _walletService = walletService;
     }
 
     [HttpPost("request")]
@@ -93,18 +97,16 @@ public class TripApiController : ControllerBase
     public async Task<IActionResult> ArriveAtOrigin(int tripId)
     {
         var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (driverId == null) return Unauthorized(); // حل وارنینگ CS8604
+        if (driverId == null) return Unauthorized();
 
-        // سرویس صدا زده میشه و RiderId رو برمی‌گردونه
-        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, Domain.Enums.TripStatus.Arrived);
-
+        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, TripStatus.Arrived);
         if (riderId == null) return BadRequest("سفر یافت نشد.");
 
-        // خبر دادن به مسافر
         var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
-        await notif.NotifyStatusChangeAsync(riderId, "راننده رسید! 🚕");
+        // ارسال پیام خاص برای آپدیت UI مسافر
+        await notif.NotifyStatusChangeAsync(riderId, "Arrived");
 
-        return Ok(new { Message = "وضعیت شد: رسیدم" });
+        return Ok(new { Message = "وضعیت: رسیدم به مبدا" });
     }
 
     [HttpPost("start/{tripId}")]
@@ -113,12 +115,11 @@ public class TripApiController : ControllerBase
         var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (driverId == null) return Unauthorized();
 
-        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, Domain.Enums.TripStatus.Started);
-
+        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, TripStatus.Started);
         if (riderId == null) return BadRequest();
 
         var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
-        await notif.NotifyStatusChangeAsync(riderId, "سفر شروع شد 🚀");
+        await notif.NotifyStatusChangeAsync(riderId, "Started");
 
         return Ok(new { Message = "سفر شروع شد" });
     }
@@ -129,13 +130,33 @@ public class TripApiController : ControllerBase
         var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (driverId == null) return Unauthorized();
 
-        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, Domain.Enums.TripStatus.Finished);
-
+        // 1. تغییر وضعیت سفر به پایان یافته
+        var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, TripStatus.Finished);
         if (riderId == null) return BadRequest();
 
-        var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
-        await notif.NotifyStatusChangeAsync(riderId, "سفر به پایان رسید ✅ مبلغ را پرداخت کنید.");
+        // 2. دریافت اطلاعات سفر برای محاسبه قیمت (در واقعیت باید قیمت نهایی اینجا محاسبه شود)
+        // اینجا فرض می‌کنیم قیمت همان قیمت اولیه است. برای سادگی یک کوئری ساده می‌زنیم
+        var dbContext = HttpContext.RequestServices.GetRequiredService<IApplicationDbContext>();
+        var trip = await dbContext.Trips.FindAsync(tripId);
 
-        return Ok(new { Message = "سفر تمام شد" });
+        if (trip != null)
+        {
+            try
+            {
+                // 3. انجام عملیات مالی (کسر از مسافر، واریز به راننده)
+                await _walletService.ProcessTripPaymentAsync(tripId, riderId, driverId, trip.Price);
+            }
+            catch (Exception ex)
+            {
+                // اگر موجودی کافی نبود یا خطا خورد
+                return BadRequest(new { Message = "خطا در پرداخت: " + ex.Message });
+            }
+        }
+
+        // 4. خبر دادن به مسافر
+        var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
+        await notif.NotifyStatusChangeAsync(riderId, "Finished");
+
+        return Ok(new { Message = "سفر پایان یافت و هزینه پرداخت شد." });
     }
 }

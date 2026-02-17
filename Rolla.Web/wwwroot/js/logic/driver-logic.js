@@ -78,7 +78,6 @@ connection.on("ReceiveTripOffer", function (trip) {
     var myModal = new bootstrap.Modal(document.getElementById('tripModal'));
     myModal.show();
 });
-
 async function acceptTrip() {
     try {
         const res = await fetch(`/api/TripApi/accept/${currentOfferId}`, {
@@ -86,6 +85,7 @@ async function acceptTrip() {
         });
 
         if (res.ok) {
+            // ... (کدهای موفقیت قبلی) ...
             // ۱. بستن مودال
             const modalElement = document.getElementById('tripModal');
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
@@ -102,7 +102,14 @@ async function acceptTrip() {
             await connection.invoke("JoinTripGroup", activeTripId);
 
         } else {
+            // ✨ مدیریت همزمانی
+            // اگر ریسپانس 400 یا خطا بود
             alert("❌ متاسفانه سفر توسط راننده دیگری رزرو شد.");
+
+            // بستن مودال
+            const modalElement = document.getElementById('tripModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) modalInstance.hide();
         }
     } catch (err) {
         console.error("Error accepting trip:", err);

@@ -18,5 +18,9 @@ namespace Rolla.Application.Interfaces
 
         // تغییر خروجی از bool به string? (که یعنی آیدی مسافر رو برمی‌گردونه)
         Task<string?> ChangeTripStatusAsync(int tripId, string driverId, Rolla.Domain.Enums.TripStatus newStatus);
+
+        Task<bool> CancelTripAsync(int tripId, string userId);
+
+        Task ExpandSearchRadiusAsync(int tripId);
     }
 }

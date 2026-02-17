@@ -173,5 +173,17 @@ public class TripApiController : ControllerBase
 
         return Ok(new { Message = "سفر با موفقیت پایان یافت و تراکنش ثبت شد." });
     }
+    [HttpPost("cancel/{tripId}")]
+    public async Task<IActionResult> CancelTrip(int tripId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var success = await _tripService.CancelTripAsync(tripId, userId);
+
+        if (!success) return BadRequest("امکان لغو سفر وجود ندارد.");
+
+        return Ok(new { Message = "سفر لغو شد." });
+    }
 
 }

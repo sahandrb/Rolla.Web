@@ -250,6 +250,10 @@ connection.on("ReceiveStatusUpdate", function (message) {
         // بازنشانی صفحه بعد از چند ثانیه
         setTimeout(() => { location.reload(); }, 3000);
     }
+    if (message === "Canceled") {
+        alert("⛔ سفر لغو شد.");
+        location.reload(); // ریست کردن صفحه
+    }
     else {
         // پیام‌های متفرقه
         alert(message);

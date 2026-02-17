@@ -6,7 +6,6 @@ public interface INotificationService
     Task NotifyNewTripAsync(int tripId, double lat, double lng, decimal price);
     Task NotifyTripAcceptedAsync(int tripId, string riderId, string driverId);
 
-    // ✨ این خط جا افتاده بود که باعث خطای CS1061 شده بود:
-    Task NotifyStatusChangeAsync(string riderId, string message);
+    Task NotifyStatusChangeAsync(int tripId, string message);
 }
 

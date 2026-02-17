@@ -22,8 +22,10 @@ namespace Rolla.Application.Services
 
         public async Task ProcessTripPaymentAsync(int tripId, string riderId, string driverId, decimal amount)
         {
-            // محاسبه سهم ها (مثلاً ۲۰ درصد کمیسیون)
-            var commissionRate = 0.20m;
+            if (amount <= 0) return; // اگر مبلغ صفر بود کاری نکن
+
+            // محاسبه سهم‌ها
+            var commissionRate = 0.20m; // ۲۰ درصد
             var commissionAmount = amount * commissionRate;
             var driverEarnings = amount - commissionAmount;
 
@@ -35,28 +37,35 @@ namespace Rolla.Application.Services
 
             // 1. کسر از مسافر
             rider.WalletBalance -= amount;
+
+            // 2. واریز به راننده
+            driver.WalletBalance += driverEarnings;
+
+            // ✨ نکته مهم: اجبار به آپدیت (محض اطمینان)
+            _context.Users.Update(rider);
+            _context.Users.Update(driver);
+
+            // 3. ثبت تراکنش برداشت مسافر
             _context.WalletTransactions.Add(new WalletTransaction
             {
                 UserId = riderId,
                 Amount = -amount,
                 Type = TransactionType.TripPayment,
                 RelatedTripId = tripId,
-                Description = $"پرداخت بابت سفر {tripId}"
+                Description = $"پرداخت هزینه سفر {tripId}",
+                CreatedAt = DateTime.UtcNow
             });
 
-            // 2. واریز به راننده (سهم خالص)
-            driver.WalletBalance += driverEarnings;
+            // 4. ثبت تراکنش واریز راننده
             _context.WalletTransactions.Add(new WalletTransaction
             {
                 UserId = driverId,
                 Amount = driverEarnings,
                 Type = TransactionType.TripIncome,
                 RelatedTripId = tripId,
-                Description = $"درآمد سفر {tripId} (پس از کسر کمیسیون)"
+                Description = $"درآمد سفر {tripId} (کسر ۲۰٪ کمیسیون)",
+                CreatedAt = DateTime.UtcNow
             });
-
-            // 3. ثبت درآمد شرکت (اختیاری - فعلا فقط لاگ می‌کنیم)
-            // CompanyWallet += commissionAmount;
 
             await _context.SaveChangesAsync();
         }

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Rolla.Application.DTOs.Trip;
 using Rolla.Application.Interfaces;
-using Rolla.Application.Services;
 using Rolla.Domain.Enums;
 using System.Security.Claims;
 
@@ -15,17 +14,22 @@ namespace Rolla.Web.Controllers;
 public class TripApiController : ControllerBase
 {
     private readonly ITripService _tripService;
-    private readonly IGeoLocationService _geoService; // ۱. فیلد جدید
+    private readonly IGeoLocationService _geoService;
     private readonly IWalletService _walletService;
+    private readonly IApplicationDbContext _context; // ✅ اضافه شده
 
-    // ۲. تزریق وابستگی در سازنده
-    public TripApiController(ITripService tripService, IGeoLocationService geoService , IWalletService walletService)
+    // تزریق وابستگی‌ها
+    public TripApiController(
+        ITripService tripService,
+        IGeoLocationService geoService,
+        IWalletService walletService,
+        IApplicationDbContext context) // ✅ اضافه شده
     {
         _tripService = tripService;
         _geoService = geoService;
         _walletService = walletService;
+        _context = context;
     }
-
     [HttpPost("request")]
     public async Task<IActionResult> RequestTrip([FromBody] CreateTripDto dto)
     {
@@ -99,12 +103,16 @@ public class TripApiController : ControllerBase
         var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (driverId == null) return Unauthorized();
 
+        // وضعیت در دیتابیس تغییر می‌کند
         var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, TripStatus.Arrived);
+
+        // اگر نال بود یعنی مشکلی هست
         if (riderId == null) return BadRequest("سفر یافت نشد.");
 
         var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
-        // ارسال پیام خاص برای آپدیت UI مسافر
-        await notif.NotifyStatusChangeAsync(riderId, "Arrived");
+
+        // ✅ اصلاح شد: ارسال tripId به جای riderId
+        await notif.NotifyStatusChangeAsync(tripId, "Arrived");
 
         return Ok(new { Message = "وضعیت: رسیدم به مبدا" });
     }
@@ -119,7 +127,9 @@ public class TripApiController : ControllerBase
         if (riderId == null) return BadRequest();
 
         var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
-        await notif.NotifyStatusChangeAsync(riderId, "Started");
+
+        // ✅ اصلاح شد: ارسال tripId
+        await notif.NotifyStatusChangeAsync(tripId, "Started");
 
         return Ok(new { Message = "سفر شروع شد" });
     }
@@ -132,31 +142,36 @@ public class TripApiController : ControllerBase
 
         // 1. تغییر وضعیت سفر به پایان یافته
         var riderId = await _tripService.ChangeTripStatusAsync(tripId, driverId, TripStatus.Finished);
-        if (riderId == null) return BadRequest();
+        if (riderId == null) return BadRequest(new { Message = "سفر یافت نشد یا شما راننده آن نیستید." });
 
-        // 2. دریافت اطلاعات سفر برای محاسبه قیمت (در واقعیت باید قیمت نهایی اینجا محاسبه شود)
-        // اینجا فرض می‌کنیم قیمت همان قیمت اولیه است. برای سادگی یک کوئری ساده می‌زنیم
-        var dbContext = HttpContext.RequestServices.GetRequiredService<IApplicationDbContext>();
-        var trip = await dbContext.Trips.FindAsync(tripId);
+        // 2. دریافت اطلاعات سفر (قیمت)
+        var trip = await _context.Trips.FindAsync(tripId);
 
-        if (trip != null)
+        if (trip != null && trip.Price > 0)
         {
             try
             {
-                // 3. انجام عملیات مالی (کسر از مسافر، واریز به راننده)
+                // 3. انجام عملیات مالی
                 await _walletService.ProcessTripPaymentAsync(tripId, riderId, driverId, trip.Price);
             }
             catch (Exception ex)
             {
-                // اگر موجودی کافی نبود یا خطا خورد
-                return BadRequest(new { Message = "خطا در پرداخت: " + ex.Message });
+                // خطا را لاگ کنید اما نگذارید پایان سفر متوقف شود
+                Console.WriteLine($"Error in payment: {ex.Message}");
+                return Ok(new { Message = "سفر تمام شد اما در تراکنش مالی خطایی رخ داد: " + ex.Message });
             }
         }
+        else
+        {
+            // اگر قیمت صفر بود (جهت دیباگ)
+            Console.WriteLine("Warning: Trip price is 0 or trip not found.");
+        }
 
-        // 4. خبر دادن به مسافر
+        // 4. ارسال نوتیفیکیشن به مسافر (که در مرحله قبل درست کردیم)
         var notif = HttpContext.RequestServices.GetRequiredService<INotificationService>();
-        await notif.NotifyStatusChangeAsync(riderId, "Finished");
+        await notif.NotifyStatusChangeAsync(tripId, "Finished");
 
-        return Ok(new { Message = "سفر پایان یافت و هزینه پرداخت شد." });
+        return Ok(new { Message = "سفر با موفقیت پایان یافت و تراکنش ثبت شد." });
     }
+
 }

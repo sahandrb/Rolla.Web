@@ -25,5 +25,9 @@ namespace Rolla.Domain.Entities
 
         [Timestamp] // این اتریبیوت جادو می‌کند!
         public byte[] RowVersion { get; set; } = default!;
+
+        public int CurrentSearchRadius { get; set; } = 2; // پیش‌فرض ۲ کیلومتر
+        public DateTime LastSearchTime { get; set; } = DateTime.UtcNow;
+
     }
 }

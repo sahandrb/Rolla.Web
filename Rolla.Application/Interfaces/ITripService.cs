@@ -22,5 +22,7 @@ namespace Rolla.Application.Interfaces
         Task<bool> CancelTripAsync(int tripId, string userId);
 
         Task ExpandSearchRadiusAsync(int tripId);
+
+        Task RejectTripAsync(int tripId, string driverId);
     }
 }

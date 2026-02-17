@@ -232,6 +232,29 @@ function openWaze() {
     window.open("https://waze.com/ul?ll=35.71,51.41&navigate=yes");
 }
 
+// وقتی مودال باز می‌شود، دکمه Reject را صدا می‌زنیم
+function rejectTrip() {
+    if (!currentOfferId) return;
+
+    fetch(`/api/TripApi/reject/${currentOfferId}`, {
+        method: 'POST'
+    })
+        .then(res => {
+            if (res.ok) {
+                // بستن مودال
+                const modalElement = document.getElementById('tripModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) modalInstance.hide();
+
+                // پاک کردن متغیر پیشنهاد فعلی
+                currentOfferId = null;
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+
+
 // شروع اولیه
 initMap();
 startSignalR();

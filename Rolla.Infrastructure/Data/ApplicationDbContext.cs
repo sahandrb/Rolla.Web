@@ -15,6 +15,7 @@ namespace Rolla.Infrastructure.Data
 
         public DbSet<Trip> Trips { get; set; } // جدول سفرها
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
+        public DbSet<TripRequestLog> TripRequestLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

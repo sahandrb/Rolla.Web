@@ -7,5 +7,7 @@ public interface INotificationService
     Task NotifyTripAcceptedAsync(int tripId, string riderId, string driverId);
 
     Task NotifyStatusChangeAsync(int tripId, string message);
+
+    Task NotifyDriverAsync(string driverId, int tripId, double lat, double lng, decimal price);
 }
 

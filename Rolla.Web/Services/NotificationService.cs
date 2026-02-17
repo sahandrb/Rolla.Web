@@ -50,4 +50,15 @@ public class NotificationService : INotificationService
         // اینطوری هم مسافر، هم راننده و هم سیستم مانیتورینگ ادمین پیام را می‌گیرند
         await _hubContext.Clients.Group($"Trip_{tripId}").SendAsync("ReceiveStatusUpdate", message);
     }
+
+    public async Task NotifyDriverAsync(string driverId, int tripId, double lat, double lng, decimal price)
+    {
+        await _hubContext.Clients.Group($"User_{driverId}").SendAsync("ReceiveTripOffer", new
+        {
+            TripId = tripId,
+            Price = price,
+            OriginLat = lat,
+            OriginLng = lng
+        });
+    }
 }

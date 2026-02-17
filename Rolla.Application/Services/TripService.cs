@@ -130,6 +130,20 @@ public class TripService : ITripService
         return trip.RiderId;
     }
 
+    public async Task RejectTripAsync(int tripId, string driverId)
+    {
+        // ثبت اینکه راننده این سفر را رد کرده است
+        var log = new TripRequestLog
+        {
+            TripId = tripId,
+            DriverId = driverId,
+            IsRejected = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.TripRequestLogs.Add(log);
+        await _context.SaveChangesAsync();
+    }
 
     public async Task ExpandSearchRadiusAsync(int tripId)
     {

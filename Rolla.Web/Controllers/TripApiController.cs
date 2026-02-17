@@ -186,4 +186,16 @@ public class TripApiController : ControllerBase
         return Ok(new { Message = "سفر لغو شد." });
     }
 
+
+    [HttpPost("reject/{tripId}")]
+    public async Task<IActionResult> RejectTrip(int tripId)
+    {
+        var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (driverId == null) return Unauthorized();
+
+        await _tripService.RejectTripAsync(tripId, driverId);
+
+        return Ok(new { Message = "سفر رد شد و دیگر نمایش داده نمی‌شود." });
+    }
+
 }

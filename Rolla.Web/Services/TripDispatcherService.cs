@@ -7,53 +7,114 @@ namespace Rolla.Web.Services;
 public class TripDispatcherService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<TripDispatcherService> _logger;
 
-    public TripDispatcherService(IServiceProvider serviceProvider)
+    public TripDispatcherService(IServiceProvider serviceProvider, ILogger<TripDispatcherService> logger)
     {
         _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("🚀 Trip Dispatcher Service Started...");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                // ایجاد اسکوپ جدید چون BackgroundService سینگلتون است
+                // ایجاد اسکوپ جدید برای هر دور اجرا (چون BackgroundService سینگلتون است)
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var dbContext = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
                     var notifService = scope.ServiceProvider.GetRequiredService<INotificationService>();
                     var geoService = scope.ServiceProvider.GetRequiredService<IGeoLocationService>();
 
-                    // ۱. پیدا کردن سفرهایی که بیش از ۱۵ ثانیه است منتظرند
+                    // ۱. پیدا کردن تمام سفرهای در حال انتظار
                     var staleTrips = await dbContext.Trips
-                        .Where(t => t.Status == TripStatus.Searching &&
-                                    t.CreatedAt < DateTime.UtcNow.AddSeconds(-15))
+                        .Where(t => t.Status == TripStatus.Searching)
                         .ToListAsync(stoppingToken);
 
                     foreach (var trip in staleTrips)
                     {
-                        // ۲. افزایش شعاع جستجو (مثلاً ۱۰ کیلومتر)
-                        var drivers = await geoService.GetNearbyDriversAsync(
-                            trip.Origin.Y, trip.Origin.X, 10);
+                        var timeElapsed = DateTime.UtcNow - trip.CreatedAt;
+                        double searchRadius = 2; // شعاع پیش‌فرض (اولیه)
 
-                        // ۳. ارسال مجدد
-                        await notifService.NotifyNewTripAsync(trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
+                        // 🔴 سناریوی ۱: لغو خودکار بعد از ۳ دقیقه
+                        if (timeElapsed.TotalMinutes >= 3)
+                        {
+                            _logger.LogWarning($"⏳ Trip {trip.Id} timed out. Canceling...");
+                            trip.Status = TripStatus.Canceled;
+                            await dbContext.SaveChangesAsync(stoppingToken);
+                            await notifService.NotifyStatusChangeAsync(trip.Id, "Canceled");
+                            continue;
+                        }
 
-                        // اینجا باید فیلدی مثل LastSearchTime را آپدیت کنیم تا دوباره ۱۰ ثانیه بعد این سفر را نگیریم
-                        // اما برای سادگی فعلاً لاگ می‌زنیم
-                        Console.WriteLine($"Expanding search for Trip {trip.Id} to 10km");
+                        // 🟡 سناریوی ۲: گسترش شعاع بعد از ۴۵ ثانیه
+                        else if (timeElapsed.TotalSeconds > 45)
+                        {
+                            searchRadius = 10;
+                        }
+
+                        // 🟢 سناریوی ۳: گسترش شعاع بعد از ۱۵ ثانیه
+                        else if (timeElapsed.TotalSeconds > 15)
+                        {
+                            searchRadius = 5;
+                        }
+                        else
+                        {
+                            // زیر ۱۵ ثانیه کاری نمی‌کنیم (چون تازه ایجاد شده و پیام اولیه رفته)
+                            continue;
+                        }
+
+                        // ۲. پیدا کردن رانندگان در شعاع جدید (از Redis)
+                        var nearbyDrivers = await geoService.GetNearbyDriversAsync(
+                            trip.Origin.Y, trip.Origin.X, searchRadius);
+
+                        if (!nearbyDrivers.Any()) continue;
+
+                        // ۳. پیدا کردن رانندگانی که قبلاً رد کرده‌اند (از SQL)
+                        // نکته: TripRequestLogs باید در DbContext اضافه شده باشد
+                        // (چون IApplicationDbContext شامل DbSet<TripRequestLog> نیست، ممکن است اینجا خطا بدهد
+                        // اگر خطا داد، باید آن را به IApplicationDbContext اضافه کنید یا کست کنید)
+                        // فرض می‌کنیم اضافه شده است.
+
+                        // اگر هنوز به IApplicationDbContext اضافه نکردی، این خط را موقتاً با var logs = ... عوض کن
+                        // یا مستقیماً از dbContext واقعی استفاده کن:
+                        var appDbContext = (Rolla.Infrastructure.Data.ApplicationDbContext)dbContext;
+
+                        var rejectedDriverIds = await appDbContext.TripRequestLogs
+                            .Where(log => log.TripId == trip.Id && log.IsRejected)
+                            .Select(log => log.DriverId)
+                            .ToListAsync(stoppingToken);
+
+                        // ۴. فیلتر کردن: حذف رانندگان لیست سیاه از لیست کل
+                        var eligibleDrivers = nearbyDrivers
+                            .Except(rejectedDriverIds)
+                            .ToList();
+
+                        if (eligibleDrivers.Any())
+                        {
+                            _logger.LogInformation($"📡 Retrying Trip {trip.Id} (Radius: {searchRadius}km) for {eligibleDrivers.Count} drivers. (Excluded: {rejectedDriverIds.Count})");
+
+                            // ۵. ارسال نوتیفیکیشن فقط به رانندگان مجاز
+                            foreach (var driverId in eligibleDrivers)
+                            {
+                                // متد جدیدی که باید در INotificationService اضافه کرده باشی
+                                // اگر هنوز اضافه نکردی، باید اضافه کنی (NotifyDriverAsync)
+                                await notifService.NotifyDriverAsync(driverId, trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
+                            }
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in Dispatcher: {ex.Message}");
+                _logger.LogError($"❌ Error in Dispatcher: {ex.Message}");
             }
 
-            // هر ۱۰ ثانیه اجرا شود
-            await Task.Delay(10000, stoppingToken);
+            // ۶. وقفه ۱۰ ثانیه‌ای تا دور بعدی
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
         }
     }
 }

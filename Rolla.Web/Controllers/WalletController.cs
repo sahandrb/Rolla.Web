@@ -20,6 +20,8 @@ namespace Rolla.Web.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            if (string.IsNullOrEmpty(userId)) return Redirect("/Identity/Account/Login");
+
             // گرفتن موجودی و تاریخچه
             var balance = await _walletService.GetBalanceAsync(userId);
             var transactions = await _walletService.GetUserTransactionsAsync(userId);
@@ -39,6 +41,8 @@ namespace Rolla.Web.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             // فراخوانی سرویس برای شارژ
             await _walletService.ChargeWalletAsync(userId, amount, "شارژ آنلاین حساب (تستی)");

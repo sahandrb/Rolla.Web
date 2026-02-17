@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Rolla.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cf3b29b4dedb860cec37b2057558d538c65c92ef")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+912723d00f05f0871fcbeda41e06beea05e9e98d")]
 [assembly: System.Reflection.AssemblyProductAttribute("Rolla.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Rolla.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -224,3 +224,34 @@ connection.on("TripAccepted", function (data) {
     // ۳. عضویت در گروه سفر برای دیدن حرکت زنده راننده
     connection.invoke("JoinTripGroup", data.tripId);
 });
+
+
+
+connection.on("ReceiveStatusUpdate", function (message) {
+    console.log("Status Update:", message);
+
+    const btn = document.getElementById('btn-request');
+
+    if (message === "Arrived") {
+        btn.className = "btn btn-warning w-100 btn-lg";
+        btn.innerText = "🚖 راننده رسید! سوار شوید.";
+        alert("راننده به مبدا رسید.");
+    }
+    else if (message === "Started") {
+        btn.className = "btn btn-info w-100 btn-lg";
+        btn.innerText = "🚀 در حال سفر...";
+        alert("سفر شما شروع شد.");
+    }
+    else if (message === "Finished") {
+        btn.className = "btn btn-success w-100 btn-lg";
+        btn.innerText = "✅ سفر تمام شد. پرداخت انجام شد.";
+        alert("سفر به پایان رسید. هزینه از کیف پول شما کسر شد.");
+
+        // بازنشانی صفحه بعد از چند ثانیه
+        setTimeout(() => { location.reload(); }, 3000);
+    }
+    else {
+        // پیام‌های متفرقه
+        alert(message);
+    }
+});

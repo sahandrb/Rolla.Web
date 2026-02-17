@@ -83,25 +83,22 @@ public class TripDispatcherService : BackgroundService
                         // یا مستقیماً از dbContext واقعی استفاده کن:
                         var appDbContext = (Rolla.Infrastructure.Data.ApplicationDbContext)dbContext;
 
-                        var rejectedDriverIds = await appDbContext.TripRequestLogs
+                        var rejectedDriverIds = await dbContext.TripRequestLogs
+                            .AsNoTracking()
                             .Where(log => log.TripId == trip.Id && log.IsRejected)
                             .Select(log => log.DriverId)
                             .ToListAsync(stoppingToken);
 
-                        // ۴. فیلتر کردن: حذف رانندگان لیست سیاه از لیست کل
+                        // ۲. فیلتر کردن هوشمند (نادیده گرفتن حروف کوچک و بزرگ)
                         var eligibleDrivers = nearbyDrivers
-                            .Except(rejectedDriverIds)
+                            .Where(d => !rejectedDriverIds.Contains(d, StringComparer.OrdinalIgnoreCase))
                             .ToList();
 
                         if (eligibleDrivers.Any())
                         {
-                            _logger.LogInformation($"📡 Retrying Trip {trip.Id} (Radius: {searchRadius}km) for {eligibleDrivers.Count} drivers. (Excluded: {rejectedDriverIds.Count})");
-
-                            // ۵. ارسال نوتیفیکیشن فقط به رانندگان مجاز
+                            _logger.LogInformation($"📡 Sending Trip {trip.Id} to {eligibleDrivers.Count} eligible drivers.");
                             foreach (var driverId in eligibleDrivers)
                             {
-                                // متد جدیدی که باید در INotificationService اضافه کرده باشی
-                                // اگر هنوز اضافه نکردی، باید اضافه کنی (NotifyDriverAsync)
                                 await notifService.NotifyDriverAsync(driverId, trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
                             }
                         }

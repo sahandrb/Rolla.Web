@@ -53,12 +53,13 @@ public class NotificationService : INotificationService
 
     public async Task NotifyDriverAsync(string driverId, int tripId, double lat, double lng, decimal price)
     {
+        // ارسال مستقیم به گروه اختصاصی راننده
         await _hubContext.Clients.Group($"User_{driverId}").SendAsync("ReceiveTripOffer", new
         {
-            TripId = tripId,
-            Price = price,
-            OriginLat = lat,
-            OriginLng = lng
+            tripId = tripId, // حتماً با حروف کوچک شروع شود تا در JS راحت‌تر خوانده شود
+            price = price,
+            originLat = lat,
+            originLng = lng
         });
     }
 }

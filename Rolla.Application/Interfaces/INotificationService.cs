@@ -9,3 +9,4 @@ public interface INotificationService
     // ✨ این خط جا افتاده بود که باعث خطای CS1061 شده بود:
     Task NotifyStatusChangeAsync(string riderId, string message);
 }
+

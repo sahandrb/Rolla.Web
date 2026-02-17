@@ -88,6 +88,7 @@ else
     app.UseHsts();
 }
 
+
 app.UseHttpsRedirection();
 app.UseStaticFiles(); // برای فایل‌های wwwroot
 app.UseRouting();

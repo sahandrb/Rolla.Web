@@ -69,34 +69,35 @@ public class TripApiController : ControllerBase
         var price = pricingService.CalculatePrice(oLat, oLng, dLat, dLng);
         return Ok(new { Price = price });
     }
+
+
     [HttpPost("accept/{tripId}")]
     public async Task<IActionResult> AcceptTrip(int tripId)
     {
-        // دریافت آیدی راننده از توکن
+        // ۱. دریافت راننده از توکن (بدون مراجعه به دیتابیس)
         var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (driverId == null) return Unauthorized();
 
-        // حل خطای Null Reference: اگر راننده لاگین نبود یا آیدی نداشت
-        if (string.IsNullOrEmpty(driverId))
-        {
-            return Unauthorized("شما باید لاگین باشید.");
-        }
-
-        // سرویس صدا زده می‌شود و نتیجه (سفر آپدیت شده) برمی‌گردد
+        // ۲. فراخوانی سرویس (Delegation)
         var acceptedTrip = await _tripService.AcceptTripAsync(tripId, driverId);
 
-        if (acceptedTrip != null)
+        // ۳. تصمیم‌گیری بر اساس خروجی سرویس
+        if (acceptedTrip == null)
         {
-            // حالا که سفر تایید شده، RiderId را داریم و می‌توانیم نوتیفیکیشن بفرستیم
-            // نکته: INotificationService باید در سازنده تزریق شده باشد، یا اینجا دستی بگیریم
-            var notifService = HttpContext.RequestServices.GetRequiredService<INotificationService>();
-
-            await notifService.NotifyTripAcceptedAsync(tripId, acceptedTrip.RiderId, driverId);
-
-            return Ok(new { Message = "سفر به شما اختصاص یافت", RiderId = acceptedTrip.RiderId });
+            // اگر نال برگشت، یعنی یا سفر وجود ندارد یا Concurrency رخ داده
+            return BadRequest(new { Message = "متاسفانه سفر توسط راننده دیگری رزرو شد." });
         }
 
-        return BadRequest("خطا: سفر یافت نشد یا توسط راننده دیگری رزرو شده است.");
+        // ۴. موفقیت: ارسال نوتیفیکیشن (می‌تواند داخل سرویس هم باشد، اما اینجا هم اوکی است)
+        var notifService = HttpContext.RequestServices.GetRequiredService<INotificationService>();
+        await notifService.NotifyTripAcceptedAsync(tripId, acceptedTrip.RiderId, driverId);
+
+        return Ok(new { Message = "سفر با موفقیت برای شما ثبت شد", RiderId = acceptedTrip.RiderId });
     }
+
+
+
+
     [HttpPost("arrive/{tripId}")]
     public async Task<IActionResult> ArriveAtOrigin(int tripId)
     {

@@ -62,27 +62,37 @@ public class TripService : ITripService
     {
         try
         {
+            // ۱. خواندن سفر
             var trip = await _context.Trips.FindAsync(tripId);
 
-            // ۱. چک کردن منطقی
+            // ۲. چک کردن منطقی (بیزنس رول)
+            // اگر سفر نال بود یا وضعیتش "در جستجو" نبود (یعنی قبلا گرفته شده)
             if (trip == null || trip.Status != TripStatus.Searching)
-                return null; // یعنی سفر قبلاً گرفته شده یا کنسل شده
+            {
+                return null;
+            }
 
-            // ۲. اختصاص راننده
+            // ۳. تغییر وضعیت (در مموری)
             trip.DriverId = driverId;
             trip.Status = TripStatus.Accepted;
 
-            // ۳. ذخیره با کنترل همزمانی
-            // اگر در فاصله بین FindAsync و SaveChangesAsync، راننده دیگری این رکورد را تغییر داده باشد،
-            // EF Core خطای DbUpdateConcurrencyException می‌دهد.
+            // ۴. تلاش برای ذخیره در دیتابیس
+            // EF Core اینجا تولید می‌کند:
+            // UPDATE Trips SET DriverId=..., RowVersion=New WHERE Id=... AND RowVersion=Old
             await _context.SaveChangesAsync();
 
-            return trip;
+            return trip; // موفقیت
         }
         catch (DbUpdateConcurrencyException)
         {
-            // یعنی یک نفر دیگه زودتر دکمه رو زده و رکورد رو تغییر داده
-            return null;
+            // 🚨 تصادف رخ داد!
+            // یعنی بین لحظه FindAsync و SaveChangesAsync، یک راننده دیگر RowVersion را تغییر داده است.
+            return null; // شکست
+        }
+        catch (Exception ex)
+        {
+            // خطاهای دیگر
+            throw;
         }
     }
     public async Task<bool> CancelTripAsync(int tripId, string userId)

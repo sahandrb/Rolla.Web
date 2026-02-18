@@ -5,7 +5,8 @@ let originMarker = null;
 let destMarker = null;
 let step = 1; // 1: انتخاب مبدا، 2: انتخاب مقصد
 let driverMarker = null;
-
+// در بالای هر دو فایل js:
+let activeTripId = null;
 // ۱. راه‌اندازی نقشه و رویداد کلیک
 document.addEventListener("DOMContentLoaded", function () {
     // اطمینان از لود شدن نقشه از map-base.js
@@ -299,10 +300,26 @@ connection.on("ReceiveChatMessage", function (senderId, message) {
     }
 });
 
-// نمایش دکمه چت وقتی سفر قبول شد
+// در فایل rider-logic.js بخش connection.on("TripAccepted", ...) را پیدا کنید:
+
 connection.on("TripAccepted", function (data) {
-    activeTripId = data.tripId;
+    console.log("Driver Found!", data);
+
+    // ✨ فیکس: ذخیره آیدی سفر برای ارسال پیام ✨
+    activeTripId = data.tripId; // <--- این خط بسیار مهم است
+
+    // تغییر دکمه‌ها و UI
+    const btn = document.getElementById('btn-request');
+    btn.className = "btn btn-success w-100 btn-lg";
+    btn.innerText = `🚗 راننده پیدا شد!`;
+
+    alert(data.message);
+
+    // نمایش دکمه چت برای مسافر
     document.getElementById('btn-open-chat').style.display = 'block';
+
+    // عضویت در گروه
+    connection.invoke("JoinTripGroup", data.tripId);
 });
 
 if (message === "Finished" || message === "Canceled") {

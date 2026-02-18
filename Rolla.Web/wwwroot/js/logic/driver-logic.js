@@ -10,7 +10,7 @@ let locationInterval;
 let currentOfferId = null;
 let isWorkingOnTrip = false; // آیا در حال انجام سفر هستیم؟
 let activeTripId = null;    // آیدی سفری که قبول کردیم
-
+// در بالای هر دو فایل js:
 async function startSignalR() {
     try {
         await connection.start();
@@ -84,6 +84,11 @@ connection.on("ReceiveTripOffer", function (trip) {
     }
     myModal.show();
 });
+
+
+
+// در فایل driver-logic.js تابع acceptTrip را پیدا و به شکل زیر اصلاح کنید:
+
 async function acceptTrip() {
     try {
         const res = await fetch(`/api/TripApi/accept/${currentOfferId}`, {
@@ -91,28 +96,26 @@ async function acceptTrip() {
         });
 
         if (res.ok) {
-            // ... (کدهای موفقیت قبلی) ...
             // ۱. بستن مودال
             const modalElement = document.getElementById('tripModal');
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
             if (modalInstance) modalInstance.hide();
 
-            // ۲. تغییر متغیرهای وضعیت
+            // ۲. تنظیم متغیرها
             isWorkingOnTrip = true;
             activeTripId = currentOfferId;
 
-            // ۳. تغییر UI (نمایش پنل سفر)
+            // ۳. تغییر UI
             showTripInfoPanel();
 
-            // ۴. عضویت در گروه سفر برای ارسال لوکیشن دقیق
+            // ✨ ۴. فیکس اصلی: نمایش دکمه چت برای راننده همین‌جا ✨
+            document.getElementById('btn-open-chat').style.display = 'block';
+
+            // ۵. عضویت در گروه سفر (برای لوکیشن و چت)
             await connection.invoke("JoinTripGroup", activeTripId);
 
         } else {
-            // ✨ مدیریت همزمانی
-            // اگر ریسپانس 400 یا خطا بود
             alert("❌ متاسفانه سفر توسط راننده دیگری رزرو شد.");
-
-            // بستن مودال
             const modalElement = document.getElementById('tripModal');
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
             if (modalInstance) modalInstance.hide();
@@ -121,6 +124,8 @@ async function acceptTrip() {
         console.error("Error accepting trip:", err);
     }
 }
+
+
 // این تابع UI پنل راننده را بر اساس وضعیت سفر تغییر می‌دهد
 function showTripInfoPanel(status = 'Accepted') {
     const statusDiv = document.querySelector('.card-body');
@@ -354,6 +359,18 @@ connection.on("ReceiveChatMessage", function (senderId, message) {
 connection.on("TripAccepted", function (data) {
     document.getElementById('btn-open-chat').style.display = 'block';
 });
+
+// تابع باز و بسته کردن باکس چت
+function toggleChat() {
+    const box = document.getElementById('chatBox');
+    if (box.style.display === 'none' || box.style.display === '') {
+        box.style.display = 'block';
+        // وقتی چت باز شد، انیمیشن یا رنگ قرمز دکمه را حذف کن
+        document.getElementById('btn-open-chat').className = "btn btn-success rounded-circle shadow-lg";
+    } else {
+        box.style.display = 'none';
+    }
+}
 // شروع اولیه
 initMap();
 startSignalR();

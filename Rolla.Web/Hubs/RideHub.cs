@@ -14,6 +14,7 @@ public class RideHub : Hub
         _aggregator = aggregator;
     }
 
+
     // ۱. وقتی کاربر وصل می‌شود (چه راننده چه مسافر)
     public override async Task OnConnectedAsync()
     {

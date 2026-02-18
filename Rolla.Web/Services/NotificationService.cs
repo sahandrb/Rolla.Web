@@ -62,4 +62,11 @@ public class NotificationService : INotificationService
             originLng = lng
         });
     }
+    // به انتهای کلاس اضافه کن
+    public async Task NotifyDriverLocationToRiderAsync(int tripId, double lat, double lng)
+    {
+        // ارسال به گروه سفر (Rider و Driver در این گروه عضو هستند)
+        // نام متد کلاینت: "ReceiveDriverLocation" (باید با rider-logic.js هماهنگ باشد)
+        await _hubContext.Clients.Group($"Trip_{tripId}").SendAsync("ReceiveDriverLocation", lat, lng);
+    }
 }

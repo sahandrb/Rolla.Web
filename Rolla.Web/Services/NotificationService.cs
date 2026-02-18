@@ -27,10 +27,10 @@ public class NotificationService : INotificationService
             // یا می‌توانیم مستقیم از متد User استفاده کنیم اگر Identity درست وصل باشد
             await _hubContext.Clients.Group($"User_{driverId}").SendAsync("ReceiveTripOffer", new
             {
-                TripId = tripId,
-                Price = price,
-                OriginLat = lat,
-                OriginLng = lng
+                tripId = tripId, // ✅ صحیح: حرف اول کوچک
+                price = price,
+                originLat = lat,
+                originLng = lng
             });
         }
     }

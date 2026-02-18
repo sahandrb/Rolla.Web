@@ -75,7 +75,13 @@ connection.on("ReceiveTripOffer", function (trip) {
     currentOfferId = trip.tripId;
     document.getElementById('modal-price').innerText = trip.price.toLocaleString() + " تومان";
 
-    var myModal = new bootstrap.Modal(document.getElementById('tripModal'));
+    const modalEl = document.getElementById('tripModal');
+    // ابتدا چک کن آیا مودال از قبل وجود دارد یا خیر
+    let myModal = bootstrap.Modal.getInstance(modalEl);
+    if (!myModal) {
+        // اگر نبود، یکی جدید بساز
+        myModal = new bootstrap.Modal(modalEl);
+    }
     myModal.show();
 });
 async function acceptTrip() {

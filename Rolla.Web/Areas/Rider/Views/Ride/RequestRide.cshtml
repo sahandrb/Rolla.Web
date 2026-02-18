@@ -23,6 +23,24 @@
     </div>
 </div>
 <style>
+    <!-- باکس چت شناور -->
+    <div id="chatBox" class="card shadow" style="display:none; position:fixed; bottom:100px; right:20px; width:300px; z-index:2000;" >
+    <div class="card-header bg-primary text-white d-flex justify-content-between" >
+    <span > 💬 چت با راننده</span >
+    <button class="btn-close btn-close-white" onclick="toggleChat()" > </button >
+    </div >
+    <div id="chatMessages" class="card-body" style="height:200px; overflow-y:auto; font-size:14px;" >
+    <!-- پیام‌ها اینجا ظاهر می‌شوند -->
+    </div >
+    <div class="card-footer p-2" >
+    <div class="input-group" >
+    <input type="text" id="chatInput" class="form-control" placeholder="پیام..." >
+    <button class="btn btn-primary" onclick="sendChatMessage()" > ارسال</button >
+    </div >
+    </div >
+    </div >
+
+    <button id="btn-open-chat" class="btn btn-info rounded-circle shadow" style="display:none; position:fixed; bottom:100px; right:20px; width:60px; height:60px; z-index:1999;" onclick="toggleChat()" > 💬</button >
     /* مطمئن شویم نقشه فضا را پر می‌کند */
     #map {
         width: 100%;

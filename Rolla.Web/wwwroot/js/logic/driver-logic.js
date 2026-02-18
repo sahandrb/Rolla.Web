@@ -259,7 +259,51 @@ function rejectTrip() {
         .catch(err => console.error(err));
 }
 
+// مدیریت چت
+function toggleChat() {
+    const box = document.getElementById('chatBox');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
 
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message || !activeTripId) return;
+
+    // فراخوانی متد هاب که در RideHub ساختیم
+    await connection.invoke("SendChatMessage", activeTripId, message);
+    input.value = "";
+}
+
+// دریافت پیام از سیگنال‌آر
+connection.on("ReceiveChatMessage", function (senderId, message) {
+    const chatMessages = document.getElementById('chatMessages');
+    const isMe = connection.connectionId === senderId; // ساده‌سازی شده
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-light text-end' : 'bg-primary text-white text-start'}`;
+    msgDiv.innerHTML = `<strong>${isMe ? 'من' : 'طرف مقابل'}:</strong> <br/> ${message}`;
+
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight; // اسکرول به پایین
+
+    // اگر چت بسته بود، دکمه را چشمک‌زن کن
+    if (document.getElementById('chatBox').style.display === 'none') {
+        document.getElementById('btn-open-chat').className = "btn btn-danger rounded-circle shadow";
+    }
+});
+
+// نمایش دکمه چت وقتی سفر قبول شد
+connection.on("TripAccepted", function (data) {
+    activeTripId = data.tripId;
+    document.getElementById('btn-open-chat').style.display = 'block';
+});
+
+
+if (message === "Finished" || message === "Canceled") {
+    document.getElementById('chatBox').style.display = 'none';
+    document.getElementById('btn-open-chat').style.display = 'none';
+}
 
 // شروع اولیه
 initMap();

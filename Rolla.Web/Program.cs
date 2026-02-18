@@ -76,7 +76,7 @@ builder.Services.AddScoped<IDriverService, DriverService>();
 builder.Services.AddScoped<ITrackingService, TrackingService>();
 builder.Services.AddExceptionHandler<Rolla.Web.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
-
+builder.Services.AddScoped<IChatService, ChatService>();
 var app = builder.Build();
 
 // ====================================================

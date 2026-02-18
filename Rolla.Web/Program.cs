@@ -74,6 +74,8 @@ builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IDriverService, DriverService>();
 builder.Services.AddScoped<ITrackingService, TrackingService>();
+builder.Services.AddExceptionHandler<Rolla.Web.Infrastructure.GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
@@ -81,16 +83,17 @@ var app = builder.Build();
 // 6. تنظیم پایپ‌لاین (HTTP Request Pipeline)
 // ====================================================
 
+// ✅ کد جدید: همیشه از ExceptionHandler استفاده کن
+app.UseExceptionHandler();
+
+// (نکته: در محیط دولوپمنت ممکن است بخواهی صفحه خطای زرد رنگ معروف را ببینی،
+// اما برای تست API، دیدن جیسون استاندارد بهتر است. پس فعلاً همین کافیست.)
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseMigrationsEndPoint();
+    // app.UseMigrationsEndPoint(); // این اگر لازم بود بماند
 }
-else
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
-
+// ...
 
 
 app.UseHttpsRedirection();

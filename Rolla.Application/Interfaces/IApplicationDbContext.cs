@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Rolla.Domain.Entities;
+using Rolla.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Rolla.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Rolla.Domain.Entities;
 
 
 
@@ -15,7 +16,7 @@ namespace Rolla.Application.Interfaces;
 public interface IApplicationDbContext
 {
     DbSet<Trip> Trips { get; set; }
-
+    DatabaseFacade Database { get; }
     // ✨ این دو خط را اضافه کنید:
     DbSet<ApplicationUser> Users { get; }
     DbSet<WalletTransaction> WalletTransactions { get; set; }

@@ -167,30 +167,44 @@ public class TripService : ITripService
 
     public async Task<bool> FinishTripAsync(int tripId, string driverId)
     {
-        var trip = await _context.Trips.FindAsync(tripId);
+        // ۱. شروع یک تراکنش واقعی در دیتابیس
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        // ۱. اعتبارسنجی
-        if (trip == null || trip.DriverId != driverId) return false;
-        if (trip.Status == TripStatus.Finished) return true;
-
-        // ۲. تغییر وضعیت
-        trip.Status = TripStatus.Finished;
-
-        // ۳. لاجیک مالی (تراکنش)
-        if (trip.Price > 0)
+        try
         {
-            await _walletService.ProcessTripPaymentAsync(tripId, trip.RiderId, driverId, trip.Price);
+            var trip = await _context.Trips.FindAsync(tripId);
+
+            if (trip == null || trip.DriverId != driverId) return false;
+            if (trip.Status == TripStatus.Finished) return true;
+
+            // ۲. تغییر وضعیت سفر (در حافظه)
+            trip.Status = TripStatus.Finished;
+
+            // ۳. انجام عملیات مالی
+            // نکته: این سرویس خودش SaveChanges می‌زند اما چون داخل تراکنش هستیم، نهایی نمی‌شود
+            if (trip.Price > 0)
+            {
+                await _walletService.ProcessTripPaymentAsync(tripId, trip.RiderId, driverId, trip.Price);
+            }
+
+            // ۴. ذخیره وضعیت سفر
+            await _context.SaveChangesAsync();
+
+            // ۵. پایان موفقیت‌آمیز تراکنش (تایید نهایی هر دو مرحله)
+            await transaction.CommitAsync();
+
+            // ۶. ارسال نوتیفیکیشن (بعد از اطمینان از تراکنش دیتابیس)
+            await _notificationService.NotifyStatusChangeAsync(tripId, "Finished");
+
+            return true;
         }
-
-        // ۴. ذخیره
-        await _context.SaveChangesAsync();
-
-        // ۵. نوتیفیکیشن
-        await _notificationService.NotifyStatusChangeAsync(tripId, "Finished");
-
-        return true;
+        catch (Exception)
+        {
+            // ۷. اگر هر خطایی در هر مرحله‌ای رخ داد، همه چیز را لغو کن
+            await transaction.RollbackAsync();
+            return false;
+        }
     }
-
     public async Task ProcessPendingTripsAsync()
     {
         var staleTrips = await _context.Trips

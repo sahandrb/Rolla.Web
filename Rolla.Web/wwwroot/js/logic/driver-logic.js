@@ -177,19 +177,20 @@ async function sendStart() {
     } catch (err) { console.error(err); }
 }
 
-// 3. تابع پایان سفر
+
 async function sendFinish() {
-    if (!confirm("آیا مطمئن هستید سفر تمام شده؟ هزینه از کیف پول مسافر کسر می‌شود.")) return;
+    if (!confirm("آیا مطمئن هستید؟")) return;
 
     try {
         const res = await fetch(`/api/TripApi/finish/${activeTripId}`, { method: 'POST' });
         if (res.ok) {
-            alert("✅ سفر با موفقیت تمام شد و هزینه دریافت شد.");
-            // بازنشانی صفحه برای سفر بعدی
+            alert("✅ سفر تمام شد.");
+
+          
+            document.getElementById('chatBox').style.display = 'none';
+            document.getElementById('btn-open-chat').style.display = 'none';
+
             location.reload();
-        } else {
-            const err = await res.json();
-            alert("❌ خطا: " + err.message);
         }
     } catch (err) { console.error(err); }
 }
@@ -260,20 +261,9 @@ function rejectTrip() {
 }
 
 // مدیریت چت
-function toggleChat() {
-    const box = document.getElementById('chatBox');
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
 
-async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-    if (!message || !activeTripId) return;
 
-    // فراخوانی متد هاب که در RideHub ساختیم
-    await connection.invoke("SendChatMessage", activeTripId, message);
-    input.value = "";
-}
+
 
 // دریافت پیام از سیگنال‌آر
 connection.on("ReceiveChatMessage", function (senderId, message) {
@@ -300,11 +290,70 @@ connection.on("TripAccepted", function (data) {
 });
 
 
-if (message === "Finished" || message === "Canceled") {
-    document.getElementById('chatBox').style.display = 'none';
-    document.getElementById('btn-open-chat').style.display = 'none';
+// گوش دادن به تغییرات وضعیت سفر (مثل رسیدن پیام لغو از مسافر)
+connection.on("ReceiveStatusUpdate", function (message) {
+    console.log("وضعیت جدید دریافت شد:", message);
+
+    // اگر سفر تمام یا لغو شد، چت را ببند و مخفی کن
+    if (message === "Finished" || message === "Canceled") {
+        const chatBox = document.getElementById('chatBox');
+        const chatBtn = document.getElementById('btn-open-chat');
+        if (chatBox) chatBox.style.display = 'none';
+        if (chatBtn) chatBtn.style.display = 'none';
+
+        if (message === "Canceled") {
+            alert("⚠️ مسافر سفر را لغو کرد.");
+            location.reload(); // بازگشت به حالت عادی
+        }
+    }
+});
+
+
+
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+
+    // activeTripId همان متغیری است که موقع قبول سفر پر کردیم
+    if (!message || !activeTripId) return;
+
+    try {
+        await connection.invoke("SendChatMessage", activeTripId, message);
+        input.value = "";
+    } catch (err) {
+        console.error("خطا در ارسال پیام:", err);
+    }
 }
 
+// گوش دادن به پیام‌های دریافتی
+connection.on("ReceiveChatMessage", function (senderId, message) {
+    const chatMessages = document.getElementById('chatMessages');
+
+    // تشخیص اینکه پیام از سمت خودمان است یا مسافر
+    // چون در راننده هستیم، اگر یوزر آیدی فرستنده با ما یکی نباشد، یعنی مسافر فرستاده
+    const isMe = connection.connectionId === senderId;
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `mb-2 p-2 rounded shadow-sm ${isMe ? 'bg-white text-end ms-5' : 'bg-success text-white text-start me-5'}`;
+    msgDiv.style.borderRadius = "15px";
+
+    msgDiv.innerHTML = `<small style="font-size:10px; opacity:0.8;">${isMe ? 'من' : 'مسافر'}</small><br/>${message}`;
+
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // نوتیفیکیشن روی دکمه اگر چت بسته بود
+    if (document.getElementById('chatBox').style.display === 'none') {
+        document.getElementById('btn-open-chat').className = "btn btn-danger rounded-circle shadow-lg animate-bounce"; // تغییر رنگ به قرمز
+    }
+});
+
+// نمایش دکمه چت به محض قبول سفر (این کد را می‌توانید داخل تابع acceptTrip هم بگذارید)
+// اما چون از سمت سرور هم پیام تایید می‌آید، اینجا مطمئن‌تر است:
+connection.on("TripAccepted", function (data) {
+    document.getElementById('btn-open-chat').style.display = 'block';
+});
 // شروع اولیه
 initMap();
 startSignalR();

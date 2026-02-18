@@ -38,6 +38,25 @@
         </div>
     </div>
 </div>
+<!-- باکس چت شناور برای راننده -->
+<div id="chatBox" class="card shadow" style="display:none; position:fixed; bottom:20px; left:20px; width:300px; z-index:2000;">
+    <div class="card-header bg-success text-white d-flex justify-content-between">
+        <span>💬 گفتگو با مسافر</span>
+        <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
+    </div>
+    <div id="chatMessages" class="card-body" style="height:200px; overflow-y:auto; font-size:14px; background-color: #f8f9fa;">
+        <!-- پیام‌ها اینجا ظاهر می‌شوند -->
+    </div>
+    <div class="card-footer p-2">
+        <div class="input-group">
+            <input type="text" id="chatInput" class="form-control" placeholder="پیام به مسافر...">
+            <button class="btn btn-success" onclick="sendChatMessage()">ارسال</button>
+        </div>
+    </div>
+</div>
+
+<!-- دکمه شناور چت -->
+<button id="btn-open-chat" class="btn btn-success rounded-circle shadow-lg" style="display:none; position:fixed; bottom:20px; left:20px; width:60px; height:60px; z-index:1999;" onclick="toggleChat()">💬</button>
 @section Scripts {
 
     <script src="~/js/core/map-base.js"></script>

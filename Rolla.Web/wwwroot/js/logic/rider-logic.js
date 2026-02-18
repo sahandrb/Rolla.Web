@@ -227,6 +227,9 @@ connection.on("TripAccepted", function (data) {
 
 
 
+// ... (کدهای قبلی سر جایشان باشند)
+
+// دریافت وضعیت سفر
 connection.on("ReceiveStatusUpdate", function (message) {
     console.log("Status Update:", message);
 
@@ -245,20 +248,22 @@ connection.on("ReceiveStatusUpdate", function (message) {
     else if (message === "Finished") {
         btn.className = "btn btn-success w-100 btn-lg";
         btn.innerText = "✅ سفر تمام شد. پرداخت انجام شد.";
-        alert("سفر به پایان رسید. هزینه از کیف پول شما کسر شد.");
-
-        // بازنشانی صفحه بعد از چند ثانیه
+        alert("سفر به پایان رسید.");
         setTimeout(() => { location.reload(); }, 3000);
     }
-    if (message === "Canceled") {
+    else if (message === "Canceled") {
         alert("⛔ سفر لغو شد.");
-        location.reload(); // ریست کردن صفحه
+        location.reload();
     }
-    else {
-        // پیام‌های متفرقه
-        alert(message);
+
+    // ✅ این قسمت باید همین‌جا (داخل تابع) باشد:
+    if (message === "Finished" || message === "Canceled") {
+        document.getElementById('chatBox').style.display = 'none';
+        document.getElementById('btn-open-chat').style.display = 'none';
     }
 });
+
+// ... (توابع toggleChat و sendChatMessage و ... سر جایشان باشند)
 
 // مدیریت چت
 function toggleChat() {

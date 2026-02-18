@@ -73,6 +73,7 @@ builder.Services.AddHostedService<TripDispatcherService>(); //  سرویس جد�
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IDriverService, DriverService>();
+builder.Services.AddScoped<ITrackingService, TrackingService>();
 
 var app = builder.Build();
 

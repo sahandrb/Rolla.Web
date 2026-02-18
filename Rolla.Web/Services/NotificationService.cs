@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Rolla.Application.DTOs.Trip;
 using Rolla.Application.Interfaces;
+using Rolla.Domain.Entities;
 using Rolla.Web.Hubs;
 
 namespace Rolla.Web.Services;
@@ -15,24 +18,19 @@ public class NotificationService : INotificationService
         _geoService = geoService;
     }
 
-    public async Task NotifyNewTripAsync(int tripId, double lat, double lng, decimal price)
+    public async Task<int> CreateTripAsync(CreateTripDto dto, string riderId)
     {
-        // ۱. پیدا کردن رانندگان در شعاع ۱۰ کیلومتری از Redis
-        var nearbyDriverIds = await _geoService.GetNearbyDriversAsync(lat, lng, 10);
+        // ... کدهای قبلی ذخیره سفر ...
+        _context.Trips.Add(trip);
+        await _context.SaveChangesAsync();
 
-        // ۲. ارسال پیام فقط به این رانندگان (با استفاده از User ID)
-        foreach (var driverId in nearbyDriverIds)
-        {
-            // در RideHub ما هر کاربر را در گروهی به نام "User_{UserId}" عضو کردیم
-            // یا می‌توانیم مستقیم از متد User استفاده کنیم اگر Identity درست وصل باشد
-            await _hubContext.Clients.Group($"User_{driverId}").SendAsync("ReceiveTripOffer", new
-            {
-                tripId = tripId, // ✅ صحیح: حرف اول کوچک
-                price = price,
-                originLat = lat,
-                originLng = lng
-            });
-        }
+        // ✅ منطق بیزنس اینجاست: رانندگان نزدیک را پیدا کن (مثلاً در شعاع ۵ کیلومتری)
+        var nearbyDrivers = await _geoLocationService.GetNearbyDriversAsync(dto.OriginLat, dto.OriginLng, 5);
+
+        // ✅ حالا به نوتیفیکیشن بگو فقط به این‌ها خبر بده
+        await _notificationService.NotifyNewTripAsync(nearbyDrivers, trip.Id, dto.OriginLat, dto.OriginLng, trip.Price);
+
+        return trip.Id;
     }
     public async Task NotifyTripAcceptedAsync(int tripId, string riderId, string driverId)
     {

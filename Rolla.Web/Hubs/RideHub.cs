@@ -5,10 +5,12 @@ namespace Rolla.Web.Hubs;
 public class RideHub : Hub
 {
     private readonly ITrackingService _trackingService; // ✅ فقط سرویس لاجیک
+    private readonly IChatService _chatService; // ✅ اضافه شد
 
-    public RideHub(ITrackingService trackingService)
+    public RideHub(ITrackingService trackingService, IChatService chatService)
     {
         _trackingService = trackingService;
+        _chatService = chatService;
     }
 
     public override async Task OnConnectedAsync()
@@ -41,4 +43,20 @@ public class RideHub : Hub
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Trip_{tripId}");
     }
+
+    // اضافه کردن متد جدید به کلاس RideHub
+    public async Task SendChatMessage(int tripId, string message)
+    {
+        var senderId = Context.UserIdentifier;
+        if (string.IsNullOrEmpty(senderId)) return;
+
+        await _chatService.SaveMessageAsync(tripId, senderId, message);
+        // ۱. ذخیره در دیتابیس (از طریق لایه Application)
+
+        // ۲. پخش زنده پیام برای طرف مقابل در همان گروه سفر
+        await Clients.Group($"Trip_{tripId}").SendAsync("ReceiveChatMessage", senderId, message);
+    }
+
+
+
 }

@@ -154,4 +154,14 @@ public class TripApiController : ControllerBase
         return Ok(new { Message = "سفر رد شد و دیگر نمایش داده نمی‌شود." });
     }
 
+
+
+    // فقط تزریق سرویس و یک اکشن ساده برای تاریخچه
+    [HttpGet("chat-history/{tripId}")]
+    public async Task<IActionResult> GetChatHistory(int tripId, [FromServices] IChatService chatService)
+    {
+        // کنترلر هیچ منطقی ندارد، فقط خروجی سرویس را برمی‌گرداند
+        var history = await chatService.GetChatHistoryAsync(tripId);
+        return Ok(history);
+    }
 }

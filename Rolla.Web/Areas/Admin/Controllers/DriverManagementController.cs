@@ -2,63 +2,40 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore; // برای ToListAsync
+using Rolla.Application.Interfaces;
 using Rolla.Domain.Entities;
 using Rolla.Domain.Enums;
 
 namespace Rolla.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Route("Admin/[controller]/[action]")] // ✨ این خط را اضافه کنید
-    // [Authorize(Roles = "Admin")] // فعلاً کامنت کن تا راحت تست کنی، بعداً فعالش کن
+    [Authorize(Roles = "Admin")] // بعداً فعالش کن
     public class DriverManagementController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IDriverService _driverService; 
 
-        public DriverManagementController(UserManager<ApplicationUser> userManager)
+        public DriverManagementController(IDriverService driverService)
         {
-            _userManager = userManager;
+            _driverService = driverService;
         }
 
         public async Task<IActionResult> Index()
         {
-            // لیست رانندگانی که وضعیتشان None نیست (یعنی درخواست داده‌اند)
-            var drivers = await _userManager.Users
-                .Where(u => u.IsDriver || u.DriverStatus != DriverStatus.None)
-                .ToListAsync();
-
+            var drivers = await _driverService.GetPendingDriversAsync();
             return View(drivers);
         }
+
         [HttpPost]
-        public async Task<IActionResult> Approve([FromForm] string userId)
+        public async Task<IActionResult> Approve(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user != null)
-            {
-                user.DriverStatus = DriverStatus.Approved;
-                user.IsDriver = true; // تایید فنی
-
-                await _userManager.UpdateAsync(user);
-
-                // اضافه کردن نقش سیستمی برای امنیت [Authorize]
-                if (!await _userManager.IsInRoleAsync(user, "Driver"))
-                {
-                    await _userManager.AddToRoleAsync(user, "Driver");
-                }
-            }
+            await _driverService.ApproveDriverAsync(userId);
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public async Task<IActionResult> Reject([FromForm] string userId)
+        public async Task<IActionResult> Reject(string userId)
         {
-            if (string.IsNullOrEmpty(userId)) return RedirectToAction("Index");
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user != null)
-            {
-                user.DriverStatus = DriverStatus.Rejected;
-                await _userManager.UpdateAsync(user);
-            }
+            await _driverService.RejectDriverAsync(userId);
             return RedirectToAction("Index");
         }
     }

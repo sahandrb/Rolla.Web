@@ -19,19 +19,21 @@ public class TripService : ITripService
 {
     private readonly IApplicationDbContext _context;
     private readonly INotificationService _notificationService;
-    private readonly IGeoLocationService _geoLocationService; // 👈 ۱. این خط رو اضافه کن
+    private readonly IGeoLocationService _geoLocationService; // 👈 ۱. این خط رو اضافه کن                                                   // متغیر جدید اضافه کن:
+    private readonly IWalletService _walletService;
 
-    // 👈 ۲. سازنده رو آپدیت کن (پارامتر سوم رو اضافه کن)
+    // سازنده را تغییر بده:
     public TripService(
         IApplicationDbContext context,
         INotificationService notificationService,
-        IGeoLocationService geoLocationService)
+        IGeoLocationService geoLocationService,
+        IWalletService walletService) // ✅ جدید
     {
         _context = context;
         _notificationService = notificationService;
-        _geoLocationService = geoLocationService; // 👈 ۳. مقداردهی کن
+        _geoLocationService = geoLocationService;
+        _walletService = walletService; // ✅ جدید
     }
-
     public async Task<int> CreateTripAsync(CreateTripDto dto, string riderId)
     {
         var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
@@ -62,37 +64,23 @@ public class TripService : ITripService
     {
         try
         {
-            // ۱. خواندن سفر
             var trip = await _context.Trips.FindAsync(tripId);
+            // لاجیک چک کردن
+            if (trip == null || trip.Status != TripStatus.Searching) return null;
 
-            // ۲. چک کردن منطقی (بیزنس رول)
-            // اگر سفر نال بود یا وضعیتش "در جستجو" نبود (یعنی قبلا گرفته شده)
-            if (trip == null || trip.Status != TripStatus.Searching)
-            {
-                return null;
-            }
-
-            // ۳. تغییر وضعیت (در مموری)
+            // لاجیک تغییر وضعیت
             trip.DriverId = driverId;
             trip.Status = TripStatus.Accepted;
-
-            // ۴. تلاش برای ذخیره در دیتابیس
-            // EF Core اینجا تولید می‌کند:
-            // UPDATE Trips SET DriverId=..., RowVersion=New WHERE Id=... AND RowVersion=Old
             await _context.SaveChangesAsync();
 
-            return trip; // موفقیت
+            // ✅ انتقال نوتیفیکیشن به اینجا (دیگر کنترلر نباید بفرستد)
+            await _notificationService.NotifyTripAcceptedAsync(trip.Id, trip.RiderId, driverId);
+
+            return trip;
         }
         catch (DbUpdateConcurrencyException)
         {
-            // 🚨 تصادف رخ داد!
-            // یعنی بین لحظه FindAsync و SaveChangesAsync، یک راننده دیگر RowVersion را تغییر داده است.
-            return null; // شکست
-        }
-        catch (Exception ex)
-        {
-            // خطاهای دیگر
-            throw;
+            return null;
         }
     }
     public async Task<bool> CancelTripAsync(int tripId, string userId)
@@ -173,5 +161,107 @@ public class TripService : ITripService
         {
             await _notificationService.NotifyNewTripAsync(trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
         }
+    }
+
+
+
+    public async Task<bool> FinishTripAsync(int tripId, string driverId)
+    {
+        var trip = await _context.Trips.FindAsync(tripId);
+
+        // ۱. اعتبارسنجی
+        if (trip == null || trip.DriverId != driverId) return false;
+        if (trip.Status == TripStatus.Finished) return true;
+
+        // ۲. تغییر وضعیت
+        trip.Status = TripStatus.Finished;
+
+        // ۳. لاجیک مالی (تراکنش)
+        if (trip.Price > 0)
+        {
+            await _walletService.ProcessTripPaymentAsync(tripId, trip.RiderId, driverId, trip.Price);
+        }
+
+        // ۴. ذخیره
+        await _context.SaveChangesAsync();
+
+        // ۵. نوتیفیکیشن
+        await _notificationService.NotifyStatusChangeAsync(tripId, "Finished");
+
+        return true;
+    }
+
+    public async Task ProcessPendingTripsAsync()
+    {
+        var staleTrips = await _context.Trips
+            .Where(t => t.Status == TripStatus.Searching)
+            .ToListAsync();
+
+        foreach (var trip in staleTrips)
+        {
+            var timeElapsed = DateTime.UtcNow - trip.CreatedAt;
+
+            // لاجیک زمان‌بندی (Business Rules)
+            if (timeElapsed.TotalMinutes >= 3)
+            {
+                trip.Status = TripStatus.Canceled;
+                await _notificationService.NotifyStatusChangeAsync(trip.Id, "Canceled");
+            }
+            else
+            {
+                // لاجیک گسترش شعاع
+                double radius = 2;
+                if (timeElapsed.TotalSeconds > 45) radius = 10;
+                else if (timeElapsed.TotalSeconds > 15) radius = 5;
+
+                var drivers = await _geoLocationService.GetNearbyDriversAsync(trip.Origin.Y, trip.Origin.X, radius);
+                foreach (var d in drivers)
+                {
+                    await _notificationService.NotifyDriverAsync(d, trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
+                }
+            }
+        }
+        await _context.SaveChangesAsync();
+    }
+    public async Task<bool> ArriveAtOriginAsync(int tripId, string driverId)
+    {
+        var trip = await _context.Trips.FindAsync(tripId);
+
+        // ۱. اعتبارسنجی: فقط راننده خودش و فقط اگر وضعیت Accepted باشد
+        if (trip == null || trip.DriverId != driverId || trip.Status != TripStatus.Accepted)
+        {
+            return false;
+        }
+
+        // ۲. تغییر وضعیت
+        trip.Status = TripStatus.Arrived;
+        await _context.SaveChangesAsync();
+
+        // ۳. ارسال نوتیفیکیشن (داخل سرویس)
+        await _notificationService.NotifyStatusChangeAsync(trip.Id, "Arrived");
+
+        return true;
+    }
+
+    public async Task<bool> StartTripAsync(int tripId, string driverId)
+    {
+        var trip = await _context.Trips.FindAsync(tripId);
+
+        // ۱. اعتبارسنجی: فقط اگر وضعیت Arrived باشد می‌توان سفر را شروع کرد
+        if (trip == null || trip.DriverId != driverId || trip.Status != TripStatus.Arrived)
+        {
+            return false;
+        }
+
+        // ۲. تغییر وضعیت و ثبت زمان شروع (اختیاری)
+        trip.Status = TripStatus.Started;
+        // trip.StartTime = DateTime.UtcNow; // اگر فیلدش را داری
+
+        await _context.SaveChangesAsync();
+
+        // ۳. ارسال نوتیفیکیشن
+        await _notificationService.NotifyStatusChangeAsync(trip.Id, "Started");
+
+        return true;
     }
 }

@@ -72,6 +72,7 @@ builder.Services.AddHostedService<LocationUploadService>();
 builder.Services.AddHostedService<TripDispatcherService>(); //  سرویس جدید
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<IDriverService, DriverService>();
 
 var app = builder.Build();
 

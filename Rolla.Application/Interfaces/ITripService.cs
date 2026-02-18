@@ -7,22 +7,29 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace Rolla.Application.Interfaces
 {
     public interface ITripService
     {
         Task<int> CreateTripAsync(CreateTripDto dto, string riderId);
 
-        // تغییر نوع بازگشتی به ?Trip (یعنی ممکن است نال باشد)
+        // تغییر: این متد خودش نوتیفیکیشن هم می‌دهد
         Task<Trip?> AcceptTripAsync(int tripId, string driverId);
 
-        // تغییر خروجی از bool به string? (که یعنی آیدی مسافر رو برمی‌گردونه)
-        Task<string?> ChangeTripStatusAsync(int tripId, string driverId, Rolla.Domain.Enums.TripStatus newStatus);
+        // جدید: این متد همه‌کاره برای پایان سفر (وضعیت + مالی + نوتیفیکیشن)
+        Task<bool> FinishTripAsync(int tripId, string driverId);
 
         Task<bool> CancelTripAsync(int tripId, string userId);
 
-        Task ExpandSearchRadiusAsync(int tripId);
+        // این متد برای لاجیک بک‌گراند است (بعداً استفاده می‌کنیم)
+        Task ProcessPendingTripsAsync();
 
         Task RejectTripAsync(int tripId, string driverId);
+
+        Task<bool> ArriveAtOriginAsync(int tripId, string driverId);
+        Task<bool> StartTripAsync(int tripId, string driverId);
+
+        // متد ChangeTripStatusAsync قدیمی را حذف کن یا private کن چون خطرناک است مستقیم صدا زده شود
     }
 }

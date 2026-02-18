@@ -36,9 +36,9 @@ public class TripService : ITripService
     }
     public async Task<int> CreateTripAsync(CreateTripDto dto, string riderId)
     {
-        var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-        var originPoint = geometryFactory.CreatePoint(new Coordinate(dto.OriginLng, dto.OriginLat));
-        var destPoint = geometryFactory.CreatePoint(new Coordinate(dto.DestinationLng, dto.DestinationLat));
+        var geometryFactory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+        var originPoint = geometryFactory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(dto.OriginLng, dto.OriginLat));
+        var destPoint = geometryFactory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(dto.DestinationLng, dto.DestinationLat));
 
         var trip = new Trip
         {
@@ -53,8 +53,11 @@ public class TripService : ITripService
         _context.Trips.Add(trip);
         await _context.SaveChangesAsync();
 
-        // ۳. شلیک نوتیفیکیشن زنده به SignalR
-        await _notificationService.NotifyNewTripAsync(trip.Id, dto.OriginLat, dto.OriginLng, trip.Price);
+        // ۱. پیدا کردن رانندگان از ردیس
+        var nearbyDrivers = await _geoLocationService.GetNearbyDriversAsync(dto.OriginLat, dto.OriginLng, 5);
+
+        // ۲. ارسال نوتیفیکیشن به رانندگان انتخاب شده
+        await _notificationService.NotifyNewTripAsync(nearbyDrivers, trip.Id, dto.OriginLat, dto.OriginLng, trip.Price);
 
         return trip.Id;
     }
@@ -153,14 +156,11 @@ public class TripService : ITripService
         // و هر بار آن را افزایش دهیم (2 -> 5 -> 10)
 
         // ۱. پیدا کردن رانندگان جدید
-        var nearbyDrivers = await _geoLocationService.GetNearbyDriversAsync(
-            trip.Origin.Y, trip.Origin.X, 5); // شعاع ۵ کیلومتر
+        // ۱. رانندگان جدید را پیدا کن
+        var nearbyDrivers = await _geoLocationService.GetNearbyDriversAsync(trip.Origin.Y, trip.Origin.X, 5);
 
-        // ۲. ارسال مجدد نوتیفیکیشن
-        foreach (var driverId in nearbyDrivers)
-        {
-            await _notificationService.NotifyNewTripAsync(trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
-        }
+        // ۲. به جای حلقه، کل لیست را یکجا به متد بفرست (طبق امضای جدید)
+        await _notificationService.NotifyNewTripAsync(nearbyDrivers, trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
     }
 
 
@@ -227,12 +227,15 @@ public class TripService : ITripService
                 double radius = 2;
                 if (timeElapsed.TotalSeconds > 45) radius = 10;
                 else if (timeElapsed.TotalSeconds > 15) radius = 5;
-
+                // پیدا کردن رانندگان
                 var drivers = await _geoLocationService.GetNearbyDriversAsync(trip.Origin.Y, trip.Origin.X, radius);
-                foreach (var d in drivers)
+
+                if (drivers.Any())
                 {
-                    await _notificationService.NotifyDriverAsync(d, trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
+                    // ارسال گروهی نوتیفیکیشن
+                    await _notificationService.NotifyNewTripAsync(drivers, trip.Id, trip.Origin.Y, trip.Origin.X, trip.Price);
                 }
+            
             }
         }
         await _context.SaveChangesAsync();

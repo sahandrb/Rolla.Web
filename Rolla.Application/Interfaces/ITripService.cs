@@ -1,4 +1,5 @@
-﻿using Rolla.Application.DTOs.Trip;
+﻿using Rolla.Application.Common;
+using Rolla.Application.DTOs.Trip;
 using Rolla.Domain.Entities; // اضافه شود
 using Rolla.Domain.Enums;
 using System;
@@ -30,6 +31,8 @@ namespace Rolla.Application.Interfaces
         Task<bool> ArriveAtOriginAsync(int tripId, string driverId);
         Task<bool> StartTripAsync(int tripId, string driverId);
 
+        // اضافه کردن به لیست متدها
+        Task<PaginatedList<TripHistoryDto>> GetTripHistoryAsync(string userId, int pageIndex, int pageSize);
         // متد ChangeTripStatusAsync قدیمی را حذف کن یا private کن چون خطرناک است مستقیم صدا زده شود
     }
 }

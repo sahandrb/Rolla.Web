@@ -27,6 +27,12 @@
                 <button type="submit" class="nav-link btn btn-link text-dark border-0">خروج</button>
             </form>
         </li>
+        <!-- در قسمتی که کاربر لاگین شده است (داخل If SignInManager.IsSignedIn) -->
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-area="" asp-controller="History" asp-action="Index">
+                <i class="bi bi-clock-history"></i> سوابق سفرها
+            </a>
+        </li>
     }
     else
     {

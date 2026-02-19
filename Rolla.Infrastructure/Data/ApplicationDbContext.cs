@@ -22,6 +22,12 @@ namespace Rolla.Infrastructure.Data
         {
             base.OnModelCreating(builder);
 
+
+            // ساخت ایندکس برای افزایش سرعت جستجوی تاریخچه
+            builder.Entity<Trip>().HasIndex(t => t.RiderId);
+            builder.Entity<Trip>().HasIndex(t => t.DriverId);
+            builder.Entity<Trip>().HasIndex(t => t.CreatedAt); // برای سرعت در مرتب‌سازی تاریخ
+
             // تنظیمات قبلی تریپ (دست نزنید)
             builder.Entity<Trip>().Property(x => x.Price).HasPrecision(18, 2);
             builder.Entity<Trip>(entity =>

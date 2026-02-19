@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
+using Rolla.Application.Common;
 using Rolla.Application.DTOs.Trip;
 using Rolla.Application.Interfaces;
 using Rolla.Domain.Entities;
@@ -280,5 +281,37 @@ public class TripService : ITripService
         await _notificationService.NotifyStatusChangeAsync(trip.Id, "Started");
 
         return true;
+    }
+
+    public async Task<PaginatedList<TripHistoryDto>> GetTripHistoryAsync(string userId, int pageIndex, int pageSize)
+    {
+        // ۱. ایجاد کوئری پایه (بدون اجرا)
+        // AsNoTracking باعث می‌شود حافظه رم سرور اشغال نشود (Read-Only)
+        var query = _context.Trips
+            .AsNoTracking()
+            .Where(t => t.RiderId == userId || t.DriverId == userId)
+            .OrderByDescending(t => t.CreatedAt);
+
+        // ۲. محاسبه تعداد کل برای صفحه‌بندی
+        var count = await query.CountAsync();
+
+        // ۳. پروجکشن (Projection): فقط ستون‌های مورد نیاز را از دیتابیس می‌کشیم
+        // این کار باعث می‌شود ستون‌های سنگین جغرافیا (Spatial) لود نشوند.
+        var items = await query
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(t => new TripHistoryDto
+            {
+                Id = t.Id,
+                CreatedAt = t.CreatedAt,
+                Price = t.Price,
+                Status = t.Status.ToString(),
+                Role = t.DriverId == userId ? "راننده" : "مسافر",
+                // محاسبه مبلغ خالص در سطح دیتابیس (SQL)
+                NetAmount = t.DriverId == userId ? (t.Price * 0.8m) : t.Price
+            })
+            .ToListAsync();
+
+        return new PaginatedList<TripHistoryDto>(items, count, pageIndex, pageSize);
     }
 }

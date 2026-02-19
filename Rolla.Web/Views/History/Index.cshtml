@@ -1,0 +1,106 @@
+﻿@using Rolla.Application.Common
+@using Rolla.Application.DTOs.Trip
+@using System.Globalization
+@model PaginatedList<TripHistoryDto>
+
+@{
+    ViewData["Title"] = "سوابق فعالیت";
+    var pc = new PersianCalendar();
+}
+
+<div class="container mt-5">
+    <div class="card border-0 shadow-lg" style="border-radius: 20px;">
+        <div class="card-header bg-dark text-white p-4" style="border-radius: 20px 20px 0 0;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">📜 تاریخچه سفرها</h3>
+                <span class="badge bg-primary fs-6">کل فعالیت‌ها: @Model.TotalCount</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="table-light">
+                        <tr class="py-3">
+                            <th>کد سفر</th>
+                            <th>نقش</th>
+                            <th>تاریخ</th>
+                            <th>زمان</th>
+                            <th>مبلغ خالص (تومان)</th>
+                            <th>وضعیت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var trip in Model.Items)
+                        {
+                            var isDriver = trip.Role == "راننده";
+                            var shamsiDate = $"{pc.GetYear(trip.CreatedAt)}/{pc.GetMonth(trip.CreatedAt):00}/{pc.GetDayOfMonth(trip.CreatedAt):00}";
+
+                            <tr>
+                                <td class="fw-bold text-muted">#@trip.Id</td>
+                                <td>
+                                    <span class="badge @(isDriver ? "bg-info text-dark" : "bg-warning text-dark") p-2">
+                                        @(isDriver ? "🚕 راننده" : "🙋‍♂️ مسافر")
+                                    </span>
+                                </td>
+                                <td>@shamsiDate</td>
+                                <td>@trip.CreatedAt.ToLocalTime().ToString("HH:mm")</td>
+                                <td class="fw-bold @(isDriver ? "text-success" : "text-danger")">
+                                    @(isDriver ? "+" : "-") @trip.NetAmount.ToString("N0")
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill @(trip.Status == "Finished" ? "bg-success" : "bg-secondary")">
+                                        @trip.Status
+                                    </span>
+                                </td>
+                                <td class="text-nowrap">
+                                    @if (isDriver)
+                                    {
+                                        <div class="text-success fw-bold">+ @trip.NetAmount.ToString("N0")</div>
+                                        <div class="text-muted small" style="font-size: 0.7rem;">(بعد از کسر ۲۰٪ کمیسیون)</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-danger fw-bold">- @trip.Price.ToString("N0")</div>
+                                        <div class="text-muted small" style="font-size: 0.7rem;">هزینه کامل سفر</div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 📟 کنترل صفحه‌بندی (Pagination) -->
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer bg-white p-4" style="border-radius: 0 0 20px 20px;">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)">قبلی</a>
+                        </li>
+
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@i">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)">بعدی</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .table thead th { border-top: 0; padding: 1.2rem; }
+    .table tbody td { padding: 1.2rem; border-color: #f8f9fa; }
+    .page-link { border-radius: 10px; margin: 0 3px; border: none; color: #333; }
+    .page-item.active .page-link { background-color: #000; color: #fff; }
+</style>

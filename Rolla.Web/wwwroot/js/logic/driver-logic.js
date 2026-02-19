@@ -267,103 +267,23 @@ function rejectTrip() {
 
 // مدیریت چت
 
+// ==========================================
+// مدیریت چت و وضعیت‌ها
+// ==========================================
 
-
-
-// دریافت پیام از سیگنال‌آر
-connection.on("ReceiveChatMessage", function (senderId, message) {
-    const chatMessages = document.getElementById('chatMessages');
-    const isMe = connection.connectionId === senderId; // ساده‌سازی شده
-
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-light text-end' : 'bg-primary text-white text-start'}`;
-    msgDiv.innerHTML = `<strong>${isMe ? 'من' : 'طرف مقابل'}:</strong> <br/> ${message}`;
-
-    chatMessages.appendChild(msgDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight; // اسکرول به پایین
-
-    // اگر چت بسته بود، دکمه را چشمک‌زن کن
-    if (document.getElementById('chatBox').style.display === 'none') {
-        document.getElementById('btn-open-chat').className = "btn btn-danger rounded-circle shadow";
-    }
-});
-
-// نمایش دکمه چت وقتی سفر قبول شد
-connection.on("TripAccepted", function (data) {
-    activeTripId = data.tripId;
-    document.getElementById('btn-open-chat').style.display = 'block';
-});
-
-
-// گوش دادن به تغییرات وضعیت سفر (مثل رسیدن پیام لغو از مسافر)
-connection.on("ReceiveStatusUpdate", function (message) {
-    console.log("وضعیت جدید دریافت شد:", message);
-
-    // اگر سفر تمام یا لغو شد، چت را ببند و مخفی کن
-    if (message === "Finished" || message === "Canceled") {
-        const chatBox = document.getElementById('chatBox');
-        const chatBtn = document.getElementById('btn-open-chat');
-        if (chatBox) chatBox.style.display = 'none';
-        if (chatBtn) chatBtn.style.display = 'none';
-
-        if (message === "Canceled") {
-            alert("⚠️ مسافر سفر را لغو کرد.");
-            location.reload(); // بازگشت به حالت عادی
-        }
-    }
-});
-
-
-// ارسال پیام توسط راننده
-async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-
-    // اگر پیامی نیست یا سفری در جریان نیست، کاری نکن
-    if (!message || !activeTripId) return;
-
-    try {
-        await connection.invoke("SendChatMessage", activeTripId, message);
-        input.value = "";
-        // ❌ نکته مهم: اینجا نباید دستی پیام را به صفحه اضافه کنید.
-        // منتظر می‌مانیم تا SignalR پیام را برگرداند تا از تکرار جلوگیری شود.
-    } catch (err) {
-        console.error("خطا در ارسال پیام:", err);
-    }
-}
-
-// گوش دادن به پیام‌های دریافتی
-// ارسال پیام توسط راننده
-async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-
-    // اگر پیامی نیست یا سفری در جریان نیست، کاری نکن
-    if (!message || !activeTripId) return;
-
-    try {
-        await connection.invoke("SendChatMessage", activeTripId, message);
-        input.value = "";
-        // ❌ نکته مهم: اینجا نباید دستی پیام را به صفحه اضافه کنید.
-        // منتظر می‌مانیم تا SignalR پیام را برگرداند تا از تکرار جلوگیری شود.
-    } catch (err) {
-        console.error("خطا در ارسال پیام:", err);
-    }
-}
-
-// دریافت پیام (چه از طرف خودم، چه از طرف مسافر)
+// 1. دریافت پیام (فقط همین یک تابع باید باشد)
 connection.on("ReceiveChatMessage", function (senderId, message) {
     const chatMessages = document.getElementById('chatMessages');
 
-    // ✅ تشخیص دقیق "من" یا "مسافر" با استفاده از ID
+    // تشخیص دقیق "من" یا "مسافر" با استفاده از ID که در ویو تعریف کردیم
     const isMe = (typeof currentUserId !== 'undefined') && (currentUserId === senderId);
 
     const msgDiv = document.createElement('div');
 
-    // استایل‌دهی: آبی برای من، خاکستری برای مسافر
+    // استایل‌دهی: آبی برای من، طوسی برای مسافر
     msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-primary text-white text-start' : 'bg-light text-dark text-end'}`;
 
-    // ✅ تنظیم نام فرستنده
+    // تنظیم نام فرستنده
     const senderName = isMe ? "شما" : "مسافر";
 
     msgDiv.innerHTML = `<small class="fw-bold d-block">${senderName}:</small> <span>${message}</span>`;
@@ -371,30 +291,72 @@ connection.on("ReceiveChatMessage", function (senderId, message) {
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight; // اسکرول به پایین
 
-    // اگر پنجره چت بسته است، دکمه را قرمز کن
-    if (document.getElementById('chatBox').style.display === 'none') {
+    // اگر پنجره چت بسته است، دکمه را قرمز کن تا راننده متوجه شود
+    const chatBox = document.getElementById('chatBox');
+    if (chatBox && chatBox.style.display === 'none') {
         const chatBtn = document.getElementById('btn-open-chat');
         if (chatBtn) chatBtn.className = "btn btn-danger rounded-circle shadow-lg";
     }
 });
 
-// نمایش دکمه چت به محض قبول سفر (این کد را می‌توانید داخل تابع acceptTrip هم بگذارید)
-// اما چون از سمت سرور هم پیام تایید می‌آید، اینجا مطمئن‌تر است:
+// 2. ارسال پیام توسط راننده
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+
+    // اگر پیامی نیست یا سفری در جریان نیست، کاری نکن
+    if (!message || !activeTripId) return;
+
+    try {
+        await connection.invoke("SendChatMessage", activeTripId, message);
+        input.value = "";
+        // نکته: اینجا پیام را دستی اضافه نمی‌کنیم تا دوبار چاپ نشود.
+        // منتظر می‌مانیم تا تابع ReceiveChatMessage از سرور بیاید.
+    } catch (err) {
+        console.error("خطا در ارسال پیام:", err);
+    }
+}
+
+// 3. نمایش دکمه چت وقتی سفر قبول شد
 connection.on("TripAccepted", function (data) {
-    document.getElementById('btn-open-chat').style.display = 'block';
+    activeTripId = data.tripId; // ست کردن آیدی سفر برای چت
+    const btnChat = document.getElementById('btn-open-chat');
+    if (btnChat) btnChat.style.display = 'block';
 });
 
-// تابع باز و بسته کردن باکس چت
+// 4. مدیریت تغییر وضعیت (پایان یا لغو سفر)
+connection.on("ReceiveStatusUpdate", function (message) {
+    console.log("وضعیت جدید دریافت شد:", message);
+
+    // اگر سفر تمام یا لغو شد، چت را ببند و مخفی کن
+    if (message === "Finished" || message === "Canceled") {
+        const chatBox = document.getElementById('chatBox');
+        const chatBtn = document.getElementById('btn-open-chat');
+
+        if (chatBox) chatBox.style.display = 'none';
+        if (chatBtn) chatBtn.style.display = 'none';
+
+        if (message === "Canceled") {
+            alert("⚠️ مسافر سفر را لغو کرد.");
+            location.reload();
+        }
+    }
+});
+
+// 5. دکمه باز/بسته کردن چت
 function toggleChat() {
     const box = document.getElementById('chatBox');
     if (box.style.display === 'none' || box.style.display === '') {
         box.style.display = 'block';
-        // وقتی چت باز شد، انیمیشن یا رنگ قرمز دکمه را حذف کن
+        // وقتی چت باز شد، رنگ دکمه را سبز (عادی) کن
         document.getElementById('btn-open-chat').className = "btn btn-success rounded-circle shadow-lg";
     } else {
         box.style.display = 'none';
     }
 }
-// شروع اولیه
+
+// ==========================================
+// شروع برنامه
+// ==========================================
 initMap();
 startSignalR();

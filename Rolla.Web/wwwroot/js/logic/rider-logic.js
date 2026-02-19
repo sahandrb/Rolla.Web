@@ -271,9 +271,19 @@ connection.on("ReceiveStatusUpdate", function (message) {
 // مدیریت چت
 function toggleChat() {
     const box = document.getElementById('chatBox');
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
+    const btn = document.getElementById('btn-open-chat');
 
+    if (box.style.display === 'none') {
+        // باز کردن چت
+        box.style.display = 'block';
+
+        // ✅✅✅ برگرداندن رنگ دکمه به حالت عادی (آبی)
+        if (btn) btn.className = "btn btn-info rounded-circle shadow";
+    } else {
+        // بستن چت
+        box.style.display = 'none';
+    }
+}
 async function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const message = input.value.trim();
@@ -285,15 +295,18 @@ async function sendChatMessage() {
 }
 
 // دریافت پیام از سیگنال‌آر
+// دریافت پیام از سیگنال‌آر
 connection.on("ReceiveChatMessage", function (senderId, message) {
     const chatMessages = document.getElementById('chatMessages');
 
+    // تشخیص اینکه پیام از طرف من است یا راننده
     const isMe = (typeof currentUserId !== 'undefined') && (currentUserId === senderId);
 
     const msgDiv = document.createElement('div');
-    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-primary text-white text-start' : 'bg-light text-dark text-end'}`; // (رنگ‌ها را برعکس کردم تا با راننده هماهنگ باشد، یا هرطور سلیقه شماست)
+    // استایل‌دهی: آبی برای من، طوسی برای راننده
+    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-primary text-white text-start' : 'bg-light text-dark text-end'}`;
 
-    // ✅ اصلاح نام‌گذاری برای مسافر
+    // تنظیم نام
     const senderName = isMe ? "شما" : "راننده";
 
     msgDiv.innerHTML = `<small class="fw-bold d-block">${senderName}:</small> <span>${message}</span>`;
@@ -301,9 +314,17 @@ connection.on("ReceiveChatMessage", function (senderId, message) {
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // ... بقیه کدها ...
+    // ✅✅✅ بخش جدید برای نوتیفیکیشن:
+    // اگر پنجره چت بسته است، دکمه را قرمز و چشمک‌زن کن
+    const chatBox = document.getElementById('chatBox');
+    if (chatBox.style.display === 'none') {
+        const chatBtn = document.getElementById('btn-open-chat');
+        if (chatBtn) {
+            // تغییر کلاس به قرمز (Danger)
+            chatBtn.className = "btn btn-danger rounded-circle shadow-lg";
+        }
+    }
 });
-
 // در فایل rider-logic.js بخش connection.on("TripAccepted", ...) را پیدا کنید:
 
 connection.on("TripAccepted", function (data) {

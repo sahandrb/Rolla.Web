@@ -1,20 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="9.0.2" />
-    <PackageReference Include="StackExchange.Redis" Version="2.11.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Rolla.Application\Rolla.Application.csproj" />
-    <ProjectReference Include="..\Rolla.Domain\Rolla.Domain.csproj" />
-  </ItemGroup>
-
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.2" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="9.0.2" />
+		<PackageReference Include="StackExchange.Redis" Version="2.11.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Rolla.Application\Rolla.Application.csproj" />
+		<ProjectReference Include="..\Rolla.Domain\Rolla.Domain.csproj" />
+	</ItemGroup>
 </Project>

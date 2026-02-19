@@ -84,6 +84,8 @@ public class DriverService : IDriverService
     }
 
     // ... بقیه متدها (GetPendingDriversAsync) ...
+    // ... ادامه کدهای قبلی ...
+
     public async Task<List<ApplicationUser>> GetPendingDriversAsync()
     {
         return await _userManager.Users
@@ -91,6 +93,32 @@ public class DriverService : IDriverService
            .ToListAsync();
     }
 
+    public async Task<bool> ApproveDriverAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return false;
+
+        user.DriverStatus = DriverStatus.Approved;
+        user.IsDriver = true;
+        await _userManager.UpdateAsync(user);
+
+        if (!await _userManager.IsInRoleAsync(user, "Driver"))
+            await _userManager.AddToRoleAsync(user, "Driver");
+
+        return true;
+    }
+
+    public async Task<bool> RejectDriverAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return false;
+
+        user.DriverStatus = DriverStatus.Rejected;
+        await _userManager.UpdateAsync(user);
+        return true;
+    }
+} // این آخرین براکت کلاس است
+
     // ... ApproveDriverAsync ...
     // ... RejectDriverAsync ...
-}
+

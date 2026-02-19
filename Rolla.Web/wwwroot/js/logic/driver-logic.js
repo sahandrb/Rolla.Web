@@ -10,7 +10,8 @@ let locationInterval;
 let currentOfferId = null;
 let isWorkingOnTrip = false; // آیا در حال انجام سفر هستیم؟
 let activeTripId = null;    // آیدی سفری که قبول کردیم
-// در بالای هر دو فایل js:
+let navigationRouteLayer = null; // نگهدارنده خط قرمز/آبی روی نقشه
+
 async function startSignalR() {
     try {
         await connection.start();
@@ -113,6 +114,7 @@ async function acceptTrip() {
 
             // ۵. عضویت در گروه سفر (برای لوکیشن و چت)
             await connection.invoke("JoinTripGroup", activeTripId);
+            updateNavigationRoute(tripId);
 
         } else {
             alert("❌ متاسفانه سفر توسط راننده دیگری رزرو شد.");
@@ -178,6 +180,7 @@ async function sendStart() {
         if (res.ok) {
             showTripInfoPanel('Started');
             alert("سفر شروع شد! به سمت مقصد برانید.");
+            updateNavigationRoute(tripId); // رسم مسیر از مبدأ تا مقصد نهایی
         }
     } catch (err) { console.error(err); }
 }
@@ -354,7 +357,52 @@ function toggleChat() {
         box.style.display = 'none';
     }
 }
+async function updateNavigationRoute(tripId) {
+    try {
+        const response = await fetch(`/api/TripApi/navigation/${tripId}`);
+        if (!response.ok) return;
 
+        const data = await response.json(); // خروجی RouteResponseDto
+
+        if (data && data.encodedPolyline) {
+            // ۱. اگر از قبل خطی روی نقشه هست، پاکش کن
+            if (navigationRouteLayer) {
+                map.removeLayer(navigationRouteLayer);
+            }
+
+            // ۲. تبدیل رشته فشرده (Encoded Polyline) به آرایه‌ای از مختصات
+            const coordinates = decodePolyline(data.encodedPolyline);
+
+            // ۳. رسم خط جدید روی نقشه
+            navigationRouteLayer = L.polyline(coordinates, {
+                color: '#2ecc71', // رنگ سبز برای مسیر
+                weight: 6,
+                opacity: 0.8,
+                lineJoin: 'round'
+            }).addTo(map);
+
+            // ۴. تنظیم زوم نقشه برای دیدن کل مسیر
+            map.fitBounds(navigationRouteLayer.getBounds(), { padding: [50, 50] });
+        }
+    } catch (error) {
+        console.error("خطا در دریافت مسیر:", error);
+    }
+}
+
+// تابع کمکی برای رمزگشایی Polyline (استاندارد OSRM/Google)
+function decodePolyline(str, precision) {
+    var index = 0, lat = 0, lng = 0, coordinates = [], shift = 0, result = 0, byte = null, latitude_change, longitude_change, factor = Math.pow(10, precision || 5);
+    while (index < str.length) {
+        byte = null; shift = 0; result = 0;
+        do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
+        latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1)); lat += latitude_change;
+        shift = 0; result = 0;
+        do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
+        longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1)); lng += longitude_change;
+        coordinates.push([lat / factor, lng / factor]);
+    }
+    return coordinates;
+};
 // ==========================================
 // شروع برنامه
 // ==========================================

@@ -77,7 +77,13 @@ builder.Services.AddScoped<ITrackingService, TrackingService>();
 builder.Services.AddExceptionHandler<Rolla.Web.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddHttpClient<IRoutingService, OsrmRoutingService>();
+
+
+
+
 var app = builder.Build();
+// اضافه کردن کلاینت مسیریابی
 
 // ====================================================
 // 6. تنظیم پایپ‌لاین (HTTP Request Pipeline)

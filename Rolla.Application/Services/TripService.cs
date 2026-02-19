@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Rolla.Application.DTOs.Trip;
 
 
 namespace Rolla.Application.Services;
@@ -22,20 +22,23 @@ public class TripService : ITripService
     private readonly INotificationService _notificationService;
     private readonly IGeoLocationService _geoLocationService; // 👈 ۱. این خط رو اضافه کن                                                   // متغیر جدید اضافه کن:
     private readonly IWalletService _walletService;
-
+    private readonly IRoutingService _routingService;
     // سازنده را تغییر بده:
     public TripService(
         IApplicationDbContext context,
         INotificationService notificationService,
         IGeoLocationService geoLocationService,
-        IWalletService walletService) // ✅ جدید
+        IWalletService walletService
+        , IRoutingService routingService) // ✅ جدید
     {
         _context = context;
         _notificationService = notificationService;
         _geoLocationService = geoLocationService;
         _walletService = walletService; // ✅ جدید
+        _routingService = routingService;
     }
-    public async Task<int> CreateTripAsync(CreateTripDto dto, string riderId)
+    // کد اصلاح شده:
+    public async Task<int> CreateTripAsync(CreateTripDto dto, string riderId) // 👈 پارامتر اضافه حذف شد
     {
         var geometryFactory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
         var originPoint = geometryFactory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(dto.OriginLng, dto.OriginLat));
@@ -54,10 +57,9 @@ public class TripService : ITripService
         _context.Trips.Add(trip);
         await _context.SaveChangesAsync();
 
-        // ۱. پیدا کردن رانندگان از ردیس
+        // استفاده از سرویسی که در سازنده تزریق شده بود
         var nearbyDrivers = await _geoLocationService.GetNearbyDriversAsync(dto.OriginLat, dto.OriginLng, 5);
 
-        // ۲. ارسال نوتیفیکیشن به رانندگان انتخاب شده
         await _notificationService.NotifyNewTripAsync(nearbyDrivers, trip.Id, dto.OriginLat, dto.OriginLng, trip.Price);
 
         return trip.Id;
@@ -313,5 +315,41 @@ public class TripService : ITripService
             .ToListAsync();
 
         return new PaginatedList<TripHistoryDto>(items, count, pageIndex, pageSize);
+    }
+    public async Task<RouteResponseDto?> GetNavigationRouteAsync(int tripId, string driverId)
+    {
+        // ۱. اطلاعات سفر را از دیتابیس بگیر
+        var trip = await _context.Trips.FindAsync(tripId);
+        if (trip == null || trip.DriverId != driverId) return null;
+
+        // ۲. لوکیشن فعلی راننده را از ردیس/سرویس جغرافیا بگیر
+        var driverLoc = await _geoLocationService.GetDriverLocationAsync(driverId);
+        if (driverLoc == null) return null;
+
+        double startLat = driverLoc.Value.lat;
+        double startLng = driverLoc.Value.lng;
+        double endLat, endLng;
+
+        // ۳. تصمیم‌گیری بر اساس وضعیت سفر (Status)
+        if (trip.Status == TripStatus.Accepted)
+        {
+            // فاز ۱: راننده سفر را قبول کرده و باید به "مبداء مسافر" برود
+            endLat = trip.Origin.Y;
+            endLng = trip.Origin.X;
+        }
+        else if (trip.Status == TripStatus.Started || trip.Status == TripStatus.Arrived)
+        {
+            // فاز ۲: راننده به مسافر رسیده یا سفر شروع شده و باید به "مقصد نهایی" برود
+            endLat = trip.Destination.Y;
+            endLng = trip.Destination.X;
+        }
+        else
+        {
+            // در بقیه وضعیت‌ها (لغو شده یا تمام شده) مسیریابی معنا ندارد
+            return null;
+        }
+
+        // ۴. درخواست مسیریابی از لایه Infrastructure
+        return await _routingService.GetRouteAsync(startLat, startLng, endLat, endLng);
     }
 }

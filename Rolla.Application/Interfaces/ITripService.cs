@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Rolla.Application.DTOs.Trip;
 
 
 namespace Rolla.Application.Interfaces
@@ -33,6 +34,7 @@ namespace Rolla.Application.Interfaces
 
         // اضافه کردن به لیست متدها
         Task<PaginatedList<TripHistoryDto>> GetTripHistoryAsync(string userId, int pageIndex, int pageSize);
-        // متد ChangeTripStatusAsync قدیمی را حذف کن یا private کن چون خطرناک است مستقیم صدا زده شود
+
+        Task<RouteResponseDto?> GetNavigationRouteAsync(int tripId, string driverId);
     }
 }

@@ -164,4 +164,18 @@ public class TripApiController : ControllerBase
         var history = await chatService.GetChatHistoryAsync(tripId);
         return Ok(history);
     }
+
+
+    [HttpGet("navigation/{tripId}")]
+    public async Task<IActionResult> GetNavigation(int tripId)
+    {
+        var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (driverId == null) return Unauthorized();
+
+        var route = await _tripService.GetNavigationRouteAsync(tripId, driverId);
+
+        if (route == null) return NotFound("اطلاعات مسیریابی در دسترس نیست.");
+
+        return Ok(route);
+    }
 }

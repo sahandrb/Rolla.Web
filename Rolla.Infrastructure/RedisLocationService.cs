@@ -31,5 +31,19 @@ public class RedisLocationService : IGeoLocationService
 
         return results.Select(r => r.Member.ToString()).ToList()!;
     }
+    public async Task<(double lat, double lng)?> GetDriverLocationAsync(string driverId)
+    {
+        // نکته: _redis خودش از قبل IDatabase است، پس مستقیماً از آن استفاده می‌کنیم.
+        // همچنین از متغیر RedisKey استفاده می‌کنیم تا با بقیه متدها هماهنگ باشد.
+        var pos = await _redis.GeoPositionAsync(RedisKey, driverId);
+
+        if (pos.HasValue)
+        {
+            // مقدار بازگشتی از ردیس شامل Latitude و Longitude است
+            return (pos.Value.Latitude, pos.Value.Longitude);
+        }
+
+        return null;
+    }
 }
 

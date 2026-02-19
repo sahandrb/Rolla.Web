@@ -12,8 +12,8 @@ public class TripHistoryDto
     public DateTime CreatedAt { get; set; }
     public decimal Price { get; set; }        // مبلغ کل سفر
     public decimal NetAmount { get; set; }    // مبلغ خالص (برای راننده ۸۰٪، برای مسافر ۱۰۰٪)
-    public string Role { get; set; }          // راننده یا مسافر
-    public string Status { get; set; }
+    public string Role { get; set; } = default!;
+    public string Status { get; set; } = default!;
     public string DestinationAddress { get; set; } // در صورت تمایل به ذخیره متنی آدرس
 
     public string StatusPersian => Status switch

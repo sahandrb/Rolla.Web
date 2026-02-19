@@ -314,43 +314,67 @@ connection.on("ReceiveStatusUpdate", function (message) {
 });
 
 
-
+// ارسال پیام توسط راننده
 async function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const message = input.value.trim();
 
-    // activeTripId همان متغیری است که موقع قبول سفر پر کردیم
+    // اگر پیامی نیست یا سفری در جریان نیست، کاری نکن
     if (!message || !activeTripId) return;
 
     try {
         await connection.invoke("SendChatMessage", activeTripId, message);
         input.value = "";
+        // ❌ نکته مهم: اینجا نباید دستی پیام را به صفحه اضافه کنید.
+        // منتظر می‌مانیم تا SignalR پیام را برگرداند تا از تکرار جلوگیری شود.
     } catch (err) {
         console.error("خطا در ارسال پیام:", err);
     }
 }
 
 // گوش دادن به پیام‌های دریافتی
+// ارسال پیام توسط راننده
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+
+    // اگر پیامی نیست یا سفری در جریان نیست، کاری نکن
+    if (!message || !activeTripId) return;
+
+    try {
+        await connection.invoke("SendChatMessage", activeTripId, message);
+        input.value = "";
+        // ❌ نکته مهم: اینجا نباید دستی پیام را به صفحه اضافه کنید.
+        // منتظر می‌مانیم تا SignalR پیام را برگرداند تا از تکرار جلوگیری شود.
+    } catch (err) {
+        console.error("خطا در ارسال پیام:", err);
+    }
+}
+
+// دریافت پیام (چه از طرف خودم، چه از طرف مسافر)
 connection.on("ReceiveChatMessage", function (senderId, message) {
     const chatMessages = document.getElementById('chatMessages');
 
-    // تشخیص اینکه پیام از سمت خودمان است یا مسافر
-    // چون در راننده هستیم، اگر یوزر آیدی فرستنده با ما یکی نباشد، یعنی مسافر فرستاده
-    const isMe = connection.connectionId === senderId;
+    // ✅ تشخیص دقیق "من" یا "مسافر" با استفاده از ID
+    const isMe = (typeof currentUserId !== 'undefined') && (currentUserId === senderId);
 
     const msgDiv = document.createElement('div');
-    msgDiv.className = `mb-2 p-2 rounded shadow-sm ${isMe ? 'bg-white text-end ms-5' : 'bg-success text-white text-start me-5'}`;
-    msgDiv.style.borderRadius = "15px";
 
-    msgDiv.innerHTML = `<small style="font-size:10px; opacity:0.8;">${isMe ? 'من' : 'مسافر'}</small><br/>${message}`;
+    // استایل‌دهی: آبی برای من، خاکستری برای مسافر
+    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-primary text-white text-start' : 'bg-light text-dark text-end'}`;
+
+    // ✅ تنظیم نام فرستنده
+    const senderName = isMe ? "شما" : "مسافر";
+
+    msgDiv.innerHTML = `<small class="fw-bold d-block">${senderName}:</small> <span>${message}</span>`;
 
     chatMessages.appendChild(msgDiv);
-    chatMessages.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatMessages.scrollTop = chatMessages.scrollHeight; // اسکرول به پایین
 
-    // نوتیفیکیشن روی دکمه اگر چت بسته بود
+    // اگر پنجره چت بسته است، دکمه را قرمز کن
     if (document.getElementById('chatBox').style.display === 'none') {
-        document.getElementById('btn-open-chat').className = "btn btn-danger rounded-circle shadow-lg animate-bounce"; // تغییر رنگ به قرمز
+        const chatBtn = document.getElementById('btn-open-chat');
+        if (chatBtn) chatBtn.className = "btn btn-danger rounded-circle shadow-lg";
     }
 });
 

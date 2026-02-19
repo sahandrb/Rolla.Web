@@ -214,6 +214,8 @@ async function submitRequest() {
 connection.on("TripAccepted", function (data) {
     console.log("Driver Found!", data);
 
+    activeTripId = data.tripId;
+
     // ۱. تغییر متن دکمه و غیرفعال کردن
     const btn = document.getElementById('btn-request');
     btn.className = "btn btn-success w-100 btn-lg";
@@ -285,19 +287,21 @@ async function sendChatMessage() {
 // دریافت پیام از سیگنال‌آر
 connection.on("ReceiveChatMessage", function (senderId, message) {
     const chatMessages = document.getElementById('chatMessages');
-    const isMe = connection.connectionId === senderId; // ساده‌سازی شده
+
+    const isMe = (typeof currentUserId !== 'undefined') && (currentUserId === senderId);
 
     const msgDiv = document.createElement('div');
-    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-light text-end' : 'bg-primary text-white text-start'}`;
-    msgDiv.innerHTML = `<strong>${isMe ? 'من' : 'طرف مقابل'}:</strong> <br/> ${message}`;
+    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-primary text-white text-start' : 'bg-light text-dark text-end'}`; // (رنگ‌ها را برعکس کردم تا با راننده هماهنگ باشد، یا هرطور سلیقه شماست)
+
+    // ✅ اصلاح نام‌گذاری برای مسافر
+    const senderName = isMe ? "شما" : "راننده";
+
+    msgDiv.innerHTML = `<small class="fw-bold d-block">${senderName}:</small> <span>${message}</span>`;
 
     chatMessages.appendChild(msgDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight; // اسکرول به پایین
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // اگر چت بسته بود، دکمه را چشمک‌زن کن
-    if (document.getElementById('chatBox').style.display === 'none') {
-        document.getElementById('btn-open-chat').className = "btn btn-danger rounded-circle shadow";
-    }
+    // ... بقیه کدها ...
 });
 
 // در فایل rider-logic.js بخش connection.on("TripAccepted", ...) را پیدا کنید:
@@ -322,7 +326,3 @@ connection.on("TripAccepted", function (data) {
     connection.invoke("JoinTripGroup", data.tripId);
 });
 
-if (message === "Finished" || message === "Canceled") {
-    document.getElementById('chatBox').style.display = 'none';
-    document.getElementById('btn-open-chat').style.display = 'none';
-}

@@ -1,5 +1,9 @@
-﻿@{
+﻿@using System.Security.Claims
+
+@{
     ViewData["Title"] = "درخواست سفر";
+
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
 
 <div class="container-fluid">
@@ -57,6 +61,9 @@
 </style>
 
 @section Scripts {
+    <script>
+        var currentUserId = '@currentUserId';
+    </script>
     <script src="~/js/core/map-base.js"></script>
     <script src="~/js/logic/rider-logic.js"></script>
 }

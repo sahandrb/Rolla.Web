@@ -1,5 +1,8 @@
-﻿@{
+﻿@using System.Security.Claims
+
+@{
     ViewData["Title"] = "میز کار راننده";
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
 
 <div class="container-fluid">
@@ -58,6 +61,10 @@
 <!-- دکمه شناور چت -->
 <button id="btn-open-chat" class="btn btn-success rounded-circle shadow-lg" style="display:none; position:fixed; bottom:20px; left:20px; width:60px; height:60px; z-index:1999;" onclick="toggleChat()">💬</button>
 @section Scripts {
+
+    <script>
+        var currentUserId = '@currentUserId';
+    </script>
 
     <script src="~/js/core/map-base.js"></script>
 

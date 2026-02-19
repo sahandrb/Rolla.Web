@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Rolla.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Rolla.Domain.Entities;
+using Rolla.Application.DTOs.Auth; 
 
 namespace Rolla.Application.Interfaces;
 
@@ -18,4 +18,6 @@ public interface IDriverService
 
     // رد راننده
     Task<bool> RejectDriverAsync(string userId);
+
+    Task RegisterDriverAsync(RegisterDriverDto dto, string userId);
 }

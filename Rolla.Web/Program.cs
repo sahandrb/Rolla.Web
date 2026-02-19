@@ -8,6 +8,7 @@ using Rolla.Infrastructure.Services; // اضافه شده برای RedisLocation
 using Rolla.Web.Hubs;
 using Rolla.Web.Services;
 using StackExchange.Redis; // اضافه شده برای اتصال به ردیس
+using Rolla.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,6 +79,7 @@ builder.Services.AddExceptionHandler<Rolla.Web.Infrastructure.GlobalExceptionHan
 builder.Services.AddProblemDetails();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddHttpClient<IRoutingService, OsrmRoutingService>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
 
 

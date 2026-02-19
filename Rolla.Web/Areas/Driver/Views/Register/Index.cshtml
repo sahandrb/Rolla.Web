@@ -1,0 +1,71 @@
+﻿@model Rolla.Application.DTOs.Auth.RegisterDriverDto
+
+@{
+    ViewData["Title"] = "ثبت‌نام و ارسال مدارک";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">📋 فرم تکمیل مدارک رانندگان</h4>
+                </div>
+                <div class="card-body">
+
+                    <!-- نمایش خطاها -->
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            @Html.ValidationSummary(false, "", new { @class = "mb-0" })
+                        </div>
+                    }
+
+                    <!-- نکته مهم: enctype برای ارسال فایل ضروری است -->
+                    <form asp-action="Index" method="post" enctype="multipart/form-data">
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CarModel" class="form-label">مدل خودرو</label>
+                                <input asp-for="CarModel" class="form-control" placeholder="مثال: پراید ۱۱۱ - سفید" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PlateNumber" class="form-label">شماره پلاک</label>
+                                <input asp-for="PlateNumber" class="form-control" placeholder="مثال: ۱۲ ب ۳۴۵ ایران ۶۶" />
+                            </div>
+                        </div>
+
+                        <hr />
+                        <h6 class="text-muted mb-3">آپلود تصاویر (حداکثر ۵ مگابایت - فرمت JPG/PNG)</h6>
+
+                        <div class="mb-3">
+                            <label asp-for="NationalCardImage" class="form-label">تصویر روی کارت ملی</label>
+                            <!-- type="file" مهم است -->
+                            <input asp-for="NationalCardImage" type="file" class="form-control" accept=".jpg,.jpeg,.png" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="LicenseImage" class="form-label">تصویر گواهینامه رانندگی</label>
+                            <input asp-for="LicenseImage" type="file" class="form-control" accept=".jpg,.jpeg,.png" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="CarImage" class="form-label">تصویر خودرو (از نمای روبرو با پلاک)</label>
+                            <input asp-for="CarImage" type="file" class="form-control" accept=".jpg,.jpeg,.png" />
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">🚀 ارسال مدارک برای بررسی</button>
+                            <a href="/" class="btn btn-outline-secondary">انصراف</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- این اسکریپت برای اعتبارسنجی سمت کلاینت (بدون رفرش) لازم است -->
+    <partial name="_ValidationScriptsPartial" />
+}

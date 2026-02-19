@@ -22,6 +22,6 @@ public interface IApplicationDbContext
     DbSet<WalletTransaction> WalletTransactions { get; set; }
     DbSet<TripRequestLog> TripRequestLogs { get; set; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-
+    DbSet<DriverDocument> DriverDocuments { get; set; }
     DbSet<ChatMessage> ChatMessages { get; set; } // نام را جمع (Messages) بگذارید
 }

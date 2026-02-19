@@ -114,7 +114,7 @@ async function acceptTrip() {
 
             // ۵. عضویت در گروه سفر (برای لوکیشن و چت)
             await connection.invoke("JoinTripGroup", activeTripId);
-            updateNavigationRoute(tripId);
+            updateNavigationRoute(activeTripId); 
 
         } else {
             alert("❌ متاسفانه سفر توسط راننده دیگری رزرو شد.");
@@ -180,7 +180,7 @@ async function sendStart() {
         if (res.ok) {
             showTripInfoPanel('Started');
             alert("سفر شروع شد! به سمت مقصد برانید.");
-            updateNavigationRoute(tripId); // رسم مسیر از مبدأ تا مقصد نهایی
+            updateNavigationRoute(activeTripId); // رسم مسیر از مبدأ تا مقصد نهایی
         }
     } catch (err) { console.error(err); }
 }

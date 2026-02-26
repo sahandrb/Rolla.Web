@@ -1,30 +1,290 @@
 ﻿@{
-    ViewData["Title"] = "نقشه رولا";
+    ViewData["Title"] = "رولا - سیستم هوشمند درخواست خودرو";
 }
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-9">
-            <!-- ظرف نقشه -->
-            <div id="map" style="height: 80vh; border-radius: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.1);"></div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <!-- این بخش را در فایل Views/Home/Index.cshtml پیدا و اصلاح کنید -->
-                <div class="card-body">
-                    <h5 class="card-title">خوش آمدید</h5>
-                    <p>برای شروع یکی از گزینه‌های زیر را انتخاب کنید:</p>
-                    <hr />
-                    <!-- به جای دکمه onclick، از یک لینک واقعی استفاده کنید -->
-                    <a href="/Rider/Ride/RequestRide" class="btn btn-primary w-100 mb-2">🙋 درخواست سفر (مسافر)</a>
-                    <a href="/Driver/Dashboard/Index" class="btn btn-success w-100">🚕 پنل راننده</a>
-                    <a href="/Driver/Register/Index" class="btn btn-success w-100">🚕 ثبت‌نام راننده</a>
-                </div>
+<style>
+    /* مخفی کردن هدر و فوتر سایت فقط در صفحه ورود */
+    header, footer {
+        display: none !important;
+    }
+
+    body {
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden;
+        background-color: #ffffff;
+    }
+
+    /* ساختار دونیمه (Split Screen) */
+    .split-layout {
+        display: flex;
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+        direction: rtl; /* راست به چپ */
+    }
+
+    /* ------------------------------------- */
+    /* نیمه راست: بخش نقشه */
+    /* ------------------------------------- */
+    .map-section {
+        width: 50%;
+        height: 100%;
+        position: relative;
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    /* یک گرادیانت ملایم روی نقشه برای زیبایی و خوانایی لوگو */
+    .map-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to left, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 40%);
+        z-index: 2;
+        pointer-events: none; /* تا مزاحم کلیک روی نقشه نشود */
+    }
+
+    /* برند رولا روی نقشه */
+    .brand-on-map {
+        position: absolute;
+        top: 40px;
+        right: 40px;
+        z-index: 3;
+        color: white;
+        font-size: 3rem;
+        font-weight: 900;
+        text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        letter-spacing: 2px;
+    }
+
+    .brand-dot {
+        color: #22c55e;
+    }
+
+    /* ------------------------------------- */
+    /* نیمه چپ: بخش محتوا و ورود */
+    /* ------------------------------------- */
+    .content-section {
+        width: 50%;
+        height: 100%;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 10;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.05); /* سایه نرم روی نقشه */
+    }
+
+    .login-panel {
+        width: 100%;
+        max-width: 450px;
+        padding: 40px;
+    }
+
+    /* استایل دکمه‌ها */
+    .btn-modern {
+        border-radius: 16px;
+        padding: 16px 20px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        border: none;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+        .btn-modern:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn-modern:active {
+            transform: scale(0.97);
+        }
+
+    .btn-rider {
+        background: #4f46e5;
+        color: white;
+        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+    }
+
+        .btn-rider:hover {
+            background: #4338ca;
+            color: white;
+            box-shadow: 0 12px 25px rgba(79, 70, 229, 0.35);
+        }
+
+    .btn-driver {
+        background: #22c55e;
+        color: white;
+        box-shadow: 0 8px 20px rgba(34, 197, 94, 0.25);
+    }
+
+        .btn-driver:hover {
+            background: #16a34a;
+            color: white;
+            box-shadow: 0 12px 25px rgba(34, 197, 94, 0.35);
+        }
+
+    .btn-register {
+        background: white;
+        color: #22c55e;
+        border: 2px solid #22c55e;
+    }
+
+        .btn-register:hover {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+    /* استاتوس بار زنده */
+    .live-status {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 12px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: bold;
+        margin-bottom: 30px;
+        border: 1px solid #eee;
+    }
+
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        background: #22c55e;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse 1.5s infinite;
+    }
+
+    @@keyframes pulse {
+        0%
+
+    {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+
+    }
+
+    /* ------------------------------------- */
+    /* رسپانسیو (موبایل و تبلت) */
+    /* ------------------------------------- */
+    @@media (max-width: 991px) {
+        .split-layout
+
+    {
+        flex-direction: column; /* روی هم قرار گرفتن */
+    }
+
+    .map-section {
+        width: 100%;
+        height: 45vh; /* نقشه ۴۵ درصد بالای صفحه */
+    }
+
+    .brand-on-map {
+        top: 20px;
+        right: 20px;
+        font-size: 2rem;
+    }
+
+    .content-section {
+        width: 100%;
+        height: 55vh; /* محتوا ۵۵ درصد پایین صفحه */
+        border-radius: 30px 30px 0 0; /* گرد کردن گوشه‌های بالا */
+        margin-top: -30px; /* رفتن روی نقشه */
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        align-items: flex-start; /* محتوا بره بالا */
+        padding-top: 20px;
+    }
+
+    .login-panel {
+        padding: 20px;
+        max-width: 100%;
+    }
+
+    }
+</style>
+
+<div class="split-layout">
+
+    <!-- نیمه راست: نقشه -->
+    <div class="map-section">
+        <div class="brand-on-map">ROLLA<span class="brand-dot">.</span></div>
+        <div class="map-overlay"></div>
+        <!-- ظرف نقشه متصل به map-logic.js -->
+        <div id="map"></div>
+    </div>
+
+    <!-- نیمه چپ: پنل ورود -->
+    <div class="content-section">
+        <div class="login-panel">
+
+            <div class="mb-5">
+                <h1 class="fw-bold text-dark mb-2">سلام! 👋</h1>
+                <p class="text-muted" style="font-size: 1rem;">برای شروع حرکت با رولا، نقش خود را انتخاب کنید.</p>
             </div>
+
+            <!-- متصل به map-logic.js -->
+            <div class="live-status shadow-sm">
+                <div>
+                    <span class="status-dot me-2"></span>
+                    <span id="status-text" class="text-muted">در حال اتصال به سرور...</span>
+                </div>
+                <div id="driver-count" class="text-primary fs-6">راننده‌های فعال: 0</div>
+            </div>
+
+            <!-- دکمه‌ها -->
+            <a href="/Rider/Ride/RequestRide" class="btn-modern btn-rider text-decoration-none">
+                <i class="bi bi-person-raised-hand fs-4 me-3"></i>
+                درخواست خودرو (مسافر)
+            </a>
+
+            <a href="/Driver/Dashboard/Index" class="btn-modern btn-driver text-decoration-none">
+                <i class="bi bi-car-front-fill fs-4 me-3"></i>
+                ورود به پنل راننده
+            </a>
+
+            <div class="d-flex align-items-center my-4">
+                <hr class="flex-grow-1 text-muted">
+                <span class="mx-3 text-muted small">یا</span>
+                <hr class="flex-grow-1 text-muted">
+            </div>
+
+            <a href="/Driver/Register/Index" class="btn-modern btn-register text-decoration-none">
+                <i class="bi bi-shield-check fs-5 me-2"></i>
+                ثبت‌نام به عنوان راننده جدید
+            </a>
+
         </div>
     </div>
+
 </div>
 
 @section Scripts {
+    <!-- این اسکریپت هیچ تغییری نکرده و به درستی روی المان‌های جدید کار می‌کند -->
     <script src="~/js/map-logic.js"></script>
 }

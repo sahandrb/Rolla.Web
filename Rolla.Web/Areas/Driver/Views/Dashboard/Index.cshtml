@@ -5,68 +5,310 @@
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-3 order-md-2">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5>وضعیت: <span id="status-indicator">آفلاین</span></h5>
-                    <hr />
-                    <button id="btn-toggle" class="btn btn-success w-100" onclick="toggleWork()">
-                        🟢 شروع کار
+<!-- استایل‌های فوق‌مدرن (App-like UI) -->
+<style>
+    /* مخفی کردن هدر و فوتر و قفل کردن اسکرول */
+    header, footer {
+        display: none !important;
+    }
+
+    body {
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden;
+        background: #e2e8f0;
+    }
+
+    /* کانتینر اصلی */
+    .app-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 1000;
+    }
+
+    #map {
+        width: 100%;
+        height: 100vh;
+        z-index: 1;
+    }
+
+    /* دکمه‌های شناور (FAB) */
+    .fab-btn {
+        position: absolute;
+        top: 20px;
+        background: white;
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #333;
+        transition: transform 0.2s;
+    }
+
+        .fab-btn:active {
+            transform: scale(0.9);
+        }
+
+    .fab-top-right {
+        right: 20px;
+    }
+
+    .fab-top-left {
+        left: 20px;
+    }
+
+    /* پنل کنترل پایین صفحه (Bottom Sheet) */
+    .driver-bottom-sheet {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: white;
+        border-radius: 25px 25px 0 0;
+        padding: 25px 20px 30px 20px;
+        z-index: 1001;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+        /* استایل دکمه اصلی (شروع کار / پایان کار / رسیدم به مبدا و ...) */
+        /* جاوااسکریپت شما کلاس btn-success و btn-danger را به این میدهد، ما آن را زیباتر میکنیم */
+        .driver-bottom-sheet .btn {
+            border-radius: 16px;
+            padding: 16px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+            .driver-bottom-sheet .btn:active {
+                transform: scale(0.97);
+            }
+
+    .status-badge {
+        background: #f1f5f9;
+        padding: 8px 20px;
+        border-radius: 30px;
+        font-weight: bold;
+        font-size: 1rem;
+        color: #475569;
+        margin-bottom: 20px;
+        border: 1px solid #e2e8f0;
+        display: inline-block;
+    }
+
+    /* سفارشی‌سازی Modal درخواست سفر */
+    .custom-modal-content {
+        border-radius: 24px;
+        border: none;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        overflow: hidden;
+    }
+
+    .modal-ping-icon {
+        width: 60px;
+        height: 60px;
+        background: #e0f2fe;
+        color: #0284c7;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin: -30px auto 15px auto;
+        box-shadow: 0 0 0 10px white;
+    }
+
+    .price-huge {
+        font-size: 2.5rem;
+        color: #22c55e;
+        font-weight: 900;
+        letter-spacing: -1px;
+    }
+
+    /* دکمه‌های مودال */
+    .btn-accept-trip {
+        background: #22c55e;
+        color: white;
+        border-radius: 16px;
+        padding: 15px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border: none;
+        width: 100%;
+    }
+
+    .btn-reject-trip {
+        background: transparent;
+        color: #94a3b8;
+        border: none;
+        font-weight: bold;
+        margin-top: 10px;
+        padding: 10px;
+        width: 100%;
+    }
+
+    /* سفارشی‌سازی چت */
+    .chat-container {
+        border-radius: 20px !important;
+        overflow: hidden;
+        border: none;
+    }
+
+    .chat-header {
+        border-radius: 20px 20px 0 0 !important;
+        background: #22c55e !important;
+    }
+
+    /* رفع عرض پنل در دسکتاپ */
+    @@media (min-width: 992px) {
+        .driver-bottom-sheet
+
+    {
+        width: 400px;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 30px;
+        border-radius: 24px;
+    }
+
+    }
+</style>
+
+<div class="app-wrapper">
+    <!-- لایه ۱: نقشه -->
+    <div id="map"></div>
+
+    <!-- لایه ۲: دکمه‌های کنترلی -->
+    <button class="fab-btn fab-top-right" onclick="location.href='/'"><i class="bi bi-arrow-right"></i></button>
+    <button class="fab-btn fab-top-left" onclick="location.href='/Wallet/Index'"><i class="bi bi-wallet2"></i></button>
+
+    <!-- لایه ۳: پنل کنترل راننده -->
+    <div class="driver-bottom-sheet">
+        <!-- نکته مهم: کلاس card-body حفظ شده تا تابع showTripInfoPanel() جاوااسکریپت کار کند -->
+        <div class="card-body w-100 text-center p-0">
+
+            <div class="status-badge">
+                وضعیت: <span id="status-indicator" class="text-danger">آفلاین</span>
+            </div>
+
+            <button id="btn-toggle" class="btn btn-success w-100" onclick="toggleWork()">
+                شروع کار
+            </button>
+
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- پاپ‌آپ (Modal) درخواست سفر با دیزاین فوق‌العاده -->
+<!-- ============================================== -->
+<div class="modal fade" id="tripModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content custom-modal-content">
+
+            <div class="bg-primary" style="height: 60px;"></div>
+
+            <div class="modal-ping-icon">
+                <i class="bi bi-bell-fill ring-animation"></i>
+            </div>
+
+            <div class="modal-body text-center px-4 pt-0 pb-4">
+                <p class="text-muted fw-bold mb-1">درخواست سفر جدید</p>
+                <div id="modal-price" class="price-huge"></div>
+
+                <div class="bg-light rounded-pill py-2 px-3 d-inline-block mt-3 mb-4">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                    فاصله تا شما: <span id="modal-dist" class="fw-bold text-dark">در حال محاسبه...</span>
+                </div>
+
+                <div class="d-flex flex-column">
+                    <button type="button" class="btn-accept-trip shadow-sm" onclick="acceptTrip()">
+                        قبول سفر
+                    </button>
+                    <button type="button" class="btn-reject-trip" onclick="rejectTrip()" data-bs-dismiss="modal">
+                        رد کردن
                     </button>
                 </div>
             </div>
         </div>
-        <div class="col-md-9 order-md-1">
-            <div id="map" style="height: 80vh; border-radius: 10px;"></div>
-        </div>
     </div>
 </div>
-<!-- Modal درخواست سفر -->
-<div class="modal fade" id="tripModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">🔔 درخواست سفر جدید</h5>
-            </div>
-            <div class="modal-body text-center">
-                <h2 id="modal-price" class="fw-bold"></h2>
-                <p>فاصله تا شما: <span id="modal-dist">...</span></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="rejectTrip()" data-bs-dismiss="modal">رد کردن</button>
-                <button type="button" class="btn btn-success w-100" onclick="acceptTrip()">✅ قبول سفر</button>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- باکس چت شناور برای راننده -->
-<div id="chatBox" class="card shadow" style="display:none; position:fixed; bottom:20px; left:20px; width:300px; z-index:2000;">
-    <div class="card-header bg-success text-white d-flex justify-content-between">
-        <span>💬 گفتگو با مسافر</span>
+
+<!-- ============================================== -->
+<!-- چت شناور (تغییر یافته برای زیبایی) -->
+<!-- ============================================== -->
+<div id="chatBox" class="card shadow-lg chat-container" style="display:none; position:fixed; bottom:100px; right:20px; width:320px; z-index:2000;">
+    <div class="card-header chat-header text-white d-flex justify-content-between align-items-center py-3">
+        <span class="fw-bold"><i class="bi bi-chat-dots me-2"></i> مسافر</span>
         <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
     </div>
-    <div id="chatMessages" class="card-body" style="height:200px; overflow-y:auto; font-size:14px; background-color: #f8f9fa;">
-        <!-- پیام‌ها اینجا ظاهر می‌شوند -->
+    <div id="chatMessages" class="card-body" style="height:250px; overflow-y:auto; font-size:0.95rem; background: #f8fafc;">
+        <!-- پیام‌ها -->
     </div>
-    <div class="card-footer p-2">
+    <div class="card-footer bg-white p-2 border-0">
         <div class="input-group">
-            <input type="text" id="chatInput" class="form-control" placeholder="پیام به مسافر...">
-            <button class="btn btn-success" onclick="sendChatMessage()">ارسال</button>
+            <input type="text" id="chatInput" class="form-control bg-light border-0" placeholder="پیام..." style="border-radius: 12px 0 0 12px;">
+            <button class="btn btn-success" onclick="sendChatMessage()" style="border-radius: 0 12px 12px 0;"><i class="bi bi-send-fill"></i></button>
         </div>
     </div>
 </div>
 
-<!-- دکمه شناور چت -->
-<button id="btn-open-chat" class="btn btn-success rounded-circle shadow-lg" style="display:none; position:fixed; bottom:20px; left:20px; width:60px; height:60px; z-index:1999;" onclick="toggleChat()">💬</button>
-@section Scripts {
+<!-- دکمه شناور باز کردن چت -->
+<button id="btn-open-chat" class="btn btn-success rounded-circle shadow-lg" style="display:none; position:fixed; bottom:110px; right:20px; width:65px; height:65px; z-index:1999; font-size: 1.8rem;" onclick="toggleChat()">
+    <i class="bi bi-chat-text-fill"></i>
+</button>
 
+@section Scripts {
     <script>
+        // متغیرهای مورد نیاز لاجیک
         var currentUserId = '@currentUserId';
     </script>
 
+    <!-- کدهای لاجیک قبلی بدون تغییر -->
     <script src="~/js/core/map-base.js"></script>
-
     <script src="~/js/logic/driver-logic.js"></script>
+
+    <!-- کدهای کمکی برای تغییر UI دکمه روشن/خاموش -->
+    <script>
+        // مانیتور کردن تغییرات دکمه اصلی (چون لاجیک شما کلاس و متن آن را عوض می‌کند)
+        document.addEventListener("DOMContentLoaded", function () {
+            const btnToggle = document.getElementById('btn-toggle');
+            const statusInd = document.getElementById('status-indicator');
+
+            // وقتی لاجیک شما کلاس دکمه را عوض میکند، رنگ نوشته وضعیت را هم عوض کنیم
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === "class") {
+                        if(btnToggle.classList.contains('btn-danger')) {
+                            // یعنی راننده آنلاین شده و دکمه قرمز (پایان کار) شده است
+                            statusInd.innerText = "آنلاین و آماده مسافرگیری";
+                            statusInd.className = "text-success";
+                        } else {
+                            // یعنی آفلاین است
+                            statusInd.innerText = "آفلاین";
+                            statusInd.className = "text-danger";
+                        }
+                    }
+                });
+            });
+
+            if(btnToggle) {
+                observer.observe(btnToggle, { attributes: true });
+            }
+        });
+    </script>
 }

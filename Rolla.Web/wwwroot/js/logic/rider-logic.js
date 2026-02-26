@@ -1,28 +1,34 @@
 ﻿// wwwroot/js/logic/rider-logic.js
 
-// متغیرهای سراسری
+// ==========================================
+// 1. متغیرهای سراسری و تنظیمات اولیه
+// ==========================================
+
 let originMarker = null;
 let destMarker = null;
 let step = 1; // 1: انتخاب مبدا، 2: انتخاب مقصد
 let driverMarker = null;
-// در بالای هر دو فایل js:
 let activeTripId = null;
-// ۱. راه‌اندازی نقشه و رویداد کلیک
+
+// ==========================================
+// 2. راه‌اندازی نقشه و رویدادهای کلیک
+// ==========================================
+
 document.addEventListener("DOMContentLoaded", function () {
     // اطمینان از لود شدن نقشه از map-base.js
     if (typeof initMap === "function") {
         initMap();
     } else {
         console.error("تابع initMap یافت نشد! فایل map-base.js لود نشده است.");
+        if (typeof notify === "function") notify("خطا در بارگذاری نقشه", "error");
         return;
     }
 
     // تعریف رویداد کلیک روی نقشه
     map.on('click', function (e) {
         if (step === 1) {
-            // انتخاب مبدا
+            // مرحله ۱: انتخاب مبدا
             if (originMarker) map.removeLayer(originMarker);
-            // استفاده از تابع addMarker که در map-base.js است
             originMarker = addMarker(e.latlng.lat, e.latlng.lng, "📍 مبدا شما");
             step = 2;
 
@@ -30,8 +36,15 @@ document.addEventListener("DOMContentLoaded", function () {
             const btn = document.getElementById('btn-request');
             btn.innerText = "📍 مقصد را انتخاب کنید";
 
+            // اگر از قبل مقصدی بود (مثلا کاربر مبدا را اصلاح کرده)، مقصد قبلی را پاک کن
+            if (destMarker) {
+                map.removeLayer(destMarker);
+                destMarker = null;
+                document.getElementById('price-display').style.display = 'none';
+            }
+
         } else if (step === 2) {
-            // انتخاب مقصد
+            // مرحله ۲: انتخاب مقصد
             if (destMarker) map.removeLayer(destMarker);
             destMarker = addMarker(e.latlng.lat, e.latlng.lng, "🏁 مقصد شما");
 
@@ -41,7 +54,10 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// ۲. اتصال به SignalR (برای دیدن راننده)
+// ==========================================
+// 3. اتصال به SignalR
+// ==========================================
+
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/rideHub")
     .withAutomaticReconnect()
@@ -49,14 +65,15 @@ const connection = new signalR.HubConnectionBuilder()
 
 connection.start().then(() => {
     console.log("Rider Connected to SignalR ✅");
-}).catch(err => console.error("SignalR Error:", err));
+}).catch(err => {
+    console.error("SignalR Error:", err);
+    if (typeof notify === "function") notify("خطا در اتصال به سرور", "error");
+});
 
+// ==========================================
+// 4. انیمیشن حرکت راننده (Interpolation)
+// ==========================================
 
-
-
-
-// تعریف آیکون ماشین
-// متغیرهای وضعیت برای انیمیشن
 let lastUpdateTimestamp = 0;
 let animationFrameId = null;
 
@@ -79,35 +96,30 @@ connection.on("ReceiveDriverLocation", function (targetLat, targetLng) {
         return;
     }
 
-    // محاسبه زمان سپری شده از آخرین آپدیت (برای پیش‌بینی سرعت)
-    // اگر تاخیر شبکه داشتیم، حداقل ۱ ثانیه را در نظر می‌گیریم تا حرکت خیلی سریع نشود
+    // محاسبه زمان سپری شده برای نرم کردن حرکت
     let duration = now - lastUpdateTimestamp;
-    if (duration < 1000) duration = 1000; // Minimum 1 second smoothing
+    if (duration < 1000) duration = 1000; // حداقل ۱ ثانیه
     lastUpdateTimestamp = now;
 
     // شروع انیمیشن نرم به سمت نقطه جدید
     animateMarker(targetLat, targetLng, duration);
 });
 
-// === تابع ریاضی برای حرکت نرم (Interpolation) ===
 function animateMarker(targetLat, targetLng, duration) {
     const startLatLng = driverMarker.getLatLng();
     const startTime = performance.now();
 
-    // اگر انیمیشن قبلی هنوز تمام نشده، کنسلش کن تا تداخل پیش نیاید
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
     function step(currentTime) {
         const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1); // عدد بین 0 تا 1
+        const progress = Math.min(elapsed / duration, 1);
 
-        // فرمول ریاضی: نقطه فعلی + (اختلاف * درصد پیشرفت)
         const currentLat = startLatLng.lat + (targetLat - startLatLng.lat) * progress;
         const currentLng = startLatLng.lng + (targetLng - startLatLng.lng) * progress;
 
         driverMarker.setLatLng([currentLat, currentLng]);
 
-        // اگر هنوز به مقصد نرسیده، فریم بعدی را درخواست کن
         if (progress < 1) {
             animationFrameId = requestAnimationFrame(step);
         } else {
@@ -118,14 +130,12 @@ function animateMarker(targetLat, targetLng, duration) {
     requestAnimationFrame(step);
 }
 
+// ==========================================
+// 5. توابع مالی و درخواست سفر
+// ==========================================
 
-
-
-
-
-// ۳. تابع محاسبه قیمت (در دسترس سراسری)
+// محاسبه قیمت
 async function calculatePrice() {
-    // تغییر متن برای اینکه کاربر بفهمد سیستم در حال کار است
     document.getElementById('price-display').innerText = "در حال محاسبه...";
     document.getElementById('btn-request').disabled = true;
 
@@ -133,7 +143,6 @@ async function calculatePrice() {
     const d = destMarker.getLatLng();
 
     try {
-        // فراخوانی API
         const url = `/api/TripApi/calculate?oLat=${o.lat}&oLng=${o.lng}&dLat=${d.lat}&dLng=${d.lng}`;
         const res = await fetch(url);
 
@@ -145,19 +154,20 @@ async function calculatePrice() {
         // نمایش قیمت
         document.getElementById('price-display').innerText = data.price.toLocaleString() + " تومان";
 
-        // ذخیره قیمت در دکمه برای ارسال نهایی
+        // ذخیره قیمت در دکمه
         const btn = document.getElementById('btn-request');
         btn.setAttribute('data-price', data.price);
-        btn.innerText = "درخواست اسنپ";
-        btn.disabled = false; // حالا دکمه فعال شود
+        btn.innerText = "درخواست رولا";
+        btn.disabled = false;
 
     } catch (err) {
         console.error("Error calculating price:", err);
         document.getElementById('price-display').innerText = "خطا در محاسبه";
+        if (typeof notify === "function") notify("خطا در محاسبه قیمت", "error");
     }
 }
 
-// ۴. تابع ثبت درخواست (در دسترس سراسری برای دکمه HTML)
+// ثبت درخواست سفر
 async function submitRequest() {
     const btn = document.getElementById('btn-request');
     btn.disabled = true;
@@ -168,7 +178,7 @@ async function submitRequest() {
     const price = btn.getAttribute('data-price');
 
     if (!price || price === "0") {
-        alert("قیمت نامعتبر است. لطفا دوباره مقصد را انتخاب کنید.");
+        if (typeof notify === "function") notify("قیمت نامعتبر است. لطفا دوباره مقصد را انتخاب کنید", "warning");
         return;
     }
 
@@ -189,50 +199,60 @@ async function submitRequest() {
 
         if (res.ok) {
             const result = await res.json();
-            alert("✅ درخواست با موفقیت ثبت شد! منتظر پذیرش راننده باشید.");
 
-            // عضویت در گروه برای ردیابی راننده
+            // ✅ نوتیفیکیشن موفقیت
+            if (typeof notify === "function") notify("درخواست شما ثبت شد. منتظر راننده باشید...", "success");
+
+            // عضویت در گروه برای ردیابی
             await connection.invoke("JoinTripGroup", result.tripId);
 
             step = 3; // وضعیت انتظار
             btn.innerText = "🔍 در حال جستجوی راننده...";
+
         } else {
             const errorText = await res.text();
             console.error("Backend Error:", errorText);
-            alert("خطا در ثبت سفر: " + errorText);
+            if (typeof notify === "function") notify("خطا در ثبت سفر: " + errorText, "error");
+
             btn.disabled = false;
             btn.innerText = "تلاش مجدد";
         }
     } catch (err) {
         console.error("Network Error:", err);
-        alert("خطای شبکه!");
+        if (typeof notify === "function") notify("خطا در اتصال به شبکه!", "error");
+
         btn.disabled = false;
         btn.innerText = "تلاش مجدد";
     }
 }
-// دریافت پیام قبول شدن سفر
+
+// ==========================================
+// 6. مدیریت وضعیت‌های سفر (سیگنال‌آر)
+// ==========================================
+
+// الف) پذیرش سفر توسط راننده
 connection.on("TripAccepted", function (data) {
     console.log("Driver Found!", data);
 
-    activeTripId = data.tripId;
+    activeTripId = data.tripId; // ذخیره شناسه سفر
 
-    // ۱. تغییر متن دکمه و غیرفعال کردن
+    // تغییر دکمه‌ها و UI
     const btn = document.getElementById('btn-request');
     btn.className = "btn btn-success w-100 btn-lg";
-    btn.innerText = `🚗 راننده پیدا شد! (${data.driverId})`;
+    btn.innerText = `🚗 راننده پیدا شد!`;
 
-    // ۲. نمایش نوتیفیکیشن
-    alert(data.message);
+    // ✅ نوتیفیکیشن پذیرش
+    if (typeof notify === "function") notify(data.message, "success");
 
-    // ۳. عضویت در گروه سفر برای دیدن حرکت زنده راننده
+    // نمایش دکمه چت
+    const chatBtn = document.getElementById('btn-open-chat');
+    if (chatBtn) chatBtn.style.display = 'block';
+
+    // عضویت در گروه برای دیدن لوکیشن زنده
     connection.invoke("JoinTripGroup", data.tripId);
 });
 
-
-
-// ... (کدهای قبلی سر جایشان باشند)
-
-// دریافت وضعیت سفر
+// ب) آپدیت وضعیت‌های سفر (رسیدن، شروع، پایان، لغو)
 connection.on("ReceiveStatusUpdate", function (message) {
     console.log("Status Update:", message);
 
@@ -241,34 +261,39 @@ connection.on("ReceiveStatusUpdate", function (message) {
     if (message === "Arrived") {
         btn.className = "btn btn-warning w-100 btn-lg";
         btn.innerText = "🚖 راننده رسید! سوار شوید.";
-        alert("راننده به مبدا رسید.");
+        if (typeof notify === "function") notify("راننده به مبدا رسید", "info");
     }
     else if (message === "Started") {
         btn.className = "btn btn-info w-100 btn-lg";
         btn.innerText = "🚀 در حال سفر...";
-        alert("سفر شما شروع شد.");
+        if (typeof notify === "function") notify("سفر شما شروع شد", "info");
     }
     else if (message === "Finished") {
         btn.className = "btn btn-success w-100 btn-lg";
-        btn.innerText = "✅ سفر تمام شد. پرداخت انجام شد.";
-        alert("سفر به پایان رسید.");
+        btn.innerText = "✅ سفر تمام شد.";
+        if (typeof notify === "function") notify("سفر با موفقیت پایان یافت. هزینه پرداخت شد", "success");
+
+        // مخفی کردن چت
+        document.getElementById('chatBox').style.display = 'none';
+        document.getElementById('btn-open-chat').style.display = 'none';
+
         setTimeout(() => { location.reload(); }, 3000);
     }
     else if (message === "Canceled") {
-        alert("⛔ سفر لغو شد.");
-        location.reload();
-    }
+        if (typeof notify === "function") notify("⛔ سفر لغو شد", "error");
 
-    // ✅ این قسمت باید همین‌جا (داخل تابع) باشد:
-    if (message === "Finished" || message === "Canceled") {
+        // مخفی کردن چت
         document.getElementById('chatBox').style.display = 'none';
         document.getElementById('btn-open-chat').style.display = 'none';
+
+        setTimeout(() => { location.reload(); }, 2000);
     }
 });
 
-// ... (توابع toggleChat و sendChatMessage و ... سر جایشان باشند)
+// ==========================================
+// 7. سیستم چت
+// ==========================================
 
-// مدیریت چت
 function toggleChat() {
     const box = document.getElementById('chatBox');
     const btn = document.getElementById('btn-open-chat');
@@ -276,37 +301,34 @@ function toggleChat() {
     if (box.style.display === 'none') {
         // باز کردن چت
         box.style.display = 'block';
-
-        // ✅✅✅ برگرداندن رنگ دکمه به حالت عادی (آبی)
-        if (btn) btn.className = "btn btn-info rounded-circle shadow";
+        // برگرداندن رنگ دکمه به حالت عادی
+        if (btn) btn.className = "btn btn-info rounded-circle shadow d-flex align-items-center justify-content-center";
     } else {
         // بستن چت
         box.style.display = 'none';
     }
 }
+
 async function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const message = input.value.trim();
     if (!message || !activeTripId) return;
 
-    // فراخوانی متد هاب که در RideHub ساختیم
+    // فراخوانی متد سرور
     await connection.invoke("SendChatMessage", activeTripId, message);
     input.value = "";
 }
 
-// دریافت پیام از سیگنال‌آر
-// دریافت پیام از سیگنال‌آر
+// دریافت پیام چت
 connection.on("ReceiveChatMessage", function (senderId, message) {
     const chatMessages = document.getElementById('chatMessages');
 
-    // تشخیص اینکه پیام از طرف من است یا راننده
     const isMe = (typeof currentUserId !== 'undefined') && (currentUserId === senderId);
 
     const msgDiv = document.createElement('div');
     // استایل‌دهی: آبی برای من، طوسی برای راننده
     msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-primary text-white text-start' : 'bg-light text-dark text-end'}`;
 
-    // تنظیم نام
     const senderName = isMe ? "شما" : "راننده";
 
     msgDiv.innerHTML = `<small class="fw-bold d-block">${senderName}:</small> <span>${message}</span>`;
@@ -314,36 +336,14 @@ connection.on("ReceiveChatMessage", function (senderId, message) {
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // ✅✅✅ بخش جدید برای نوتیفیکیشن:
-    // اگر پنجره چت بسته است، دکمه را قرمز و چشمک‌زن کن
+    // اگر پنجره چت بسته است، نوتیفیکیشن بده
     const chatBox = document.getElementById('chatBox');
     if (chatBox.style.display === 'none') {
         const chatBtn = document.getElementById('btn-open-chat');
         if (chatBtn) {
-            // تغییر کلاس به قرمز (Danger)
-            chatBtn.className = "btn btn-danger rounded-circle shadow-lg";
+            // قرمز کردن دکمه چت
+            chatBtn.className = "btn btn-danger rounded-circle shadow-lg d-flex align-items-center justify-content-center";
         }
+        if (typeof notify === "function") notify("پیام جدید از راننده", "info");
     }
 });
-// در فایل rider-logic.js بخش connection.on("TripAccepted", ...) را پیدا کنید:
-
-connection.on("TripAccepted", function (data) {
-    console.log("Driver Found!", data);
-
-    // ✨ فیکس: ذخیره آیدی سفر برای ارسال پیام ✨
-    activeTripId = data.tripId; // <--- این خط بسیار مهم است
-
-    // تغییر دکمه‌ها و UI
-    const btn = document.getElementById('btn-request');
-    btn.className = "btn btn-success w-100 btn-lg";
-    btn.innerText = `🚗 راننده پیدا شد!`;
-
-    alert(data.message);
-
-    // نمایش دکمه چت برای مسافر
-    document.getElementById('btn-open-chat').style.display = 'block';
-
-    // عضویت در گروه
-    connection.invoke("JoinTripGroup", data.tripId);
-});
-

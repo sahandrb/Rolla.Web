@@ -36,53 +36,94 @@
         z-index: 1;
     }
 
-    /* دکمه‌های شناور بالای صفحه (مانند اسنپ) */
-    .fab-btn {
+    /* --- لوگوی روی نقشه --- */
+    .brand-on-map {
         position: absolute;
         top: 20px;
-        background: white;
-        border: none;
-        border-radius: 50%;
-        width: 45px;
-        height: 45px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        right: 20px;
+        z-index: 1000;
+        color: white;
+        font-size: 2.2rem;
+        font-weight: 900;
+        text-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        letter-spacing: 2px;
+        pointer-events: none;
+    }
+
+    .brand-dot {
+        color: #22c55e;
+    }
+
+    @@media (min-width: 768px) {
+        .brand-on-map
+
+    {
+        top: 40px;
+        right: 40px;
+        font-size: 3rem;
+    }
+
+    }
+
+    /* --- دکمه‌های کنترلی بالای صفحه (مدرن و شیشه‌ای) --- */
+    .top-action-btn {
+        position: absolute;
+        top: 20px;
+        background: rgba(255, 255, 255, 0.85); /* پس‌زمینه نیمه‌شفاف */
+        backdrop-filter: blur(12px); /* افکت شیشه‌ای */
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         z-index: 1001;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.2rem;
-        color: #333;
-        transition: transform 0.2s;
+        color: #1e293b;
+        text-decoration: none;
+        transition: all 0.2s;
     }
 
-        .fab-btn:active {
-            transform: scale(0.9);
+        .top-action-btn:active {
+            transform: scale(0.95);
         }
 
-    .fab-top-right {
-        right: 20px;
-    }
-
-    .fab-top-left {
+    /* دکمه بازگشت (گوشه چپ) */
+    .btn-back {
         left: 20px;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        font-size: 1.3rem;
     }
 
-    /* نشانگر نوع سرویس (برای خودم) */
-    .fab-top-center {
-        position: absolute;
-        top: 20px;
+    /* دکمه کیف پول (وسط صفحه) */
+    .btn-wallet {
         left: 50%;
         transform: translateX(-50%);
-        background: white;
-        padding: 10px 20px;
+        padding: 10px 24px;
         border-radius: 30px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        z-index: 1001;
-        font-weight: bold;
-        font-size: 0.9rem;
-        color: #333;
+        font-weight: 800;
+        font-size: 0.95rem;
     }
 
+        .btn-wallet:hover {
+            color: #1e293b;
+            background: rgba(255, 255, 255, 1);
+        }
+
+    /* رسپانسیو دکمه‌های بالا */
+    @@media (min-width: 768px) {
+        .btn-back
+
+    {
+        left: 40px;
+        top: 30px;
+    }
+
+    .btn-wallet {
+        top: 30px;
+    }
+
+    }
     /* پنل سفید پایین صفحه (Bottom Sheet) */
     .bottom-sheet {
         position: absolute;
@@ -115,6 +156,38 @@
         font-weight: 900;
         display: none;
         margin-bottom: 15px;
+    }
+
+    .btn-back-driver {
+        position: absolute;
+        top: 20px;
+        left: 20px; /* قرارگیری در سمت چپ قرینه لوگو */
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #1e293b;
+        text-decoration: none;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        font-size: 1.3rem;
+        transition: all 0.2s;
+    }
+
+        .btn-back-driver:active {
+            transform: scale(0.95);
+        }
+
+    @@media (min-width: 768px) {
+        .btn-back-driver {
+            left: 40px;
+            top: 30px;
+        }
     }
 
     /* دکمه اصلی پایین صفحه */
@@ -150,28 +223,28 @@
     <!-- لایه ۱: نقشه -->
     <div id="map"></div>
 
-    <!-- لایه ۲: دکمه‌های کنترلی بالای صفحه -->
-    <!-- دکمه بازگشت به داشبورد/خانه -->
-    <button class="fab-btn fab-top-right" onclick="location.href='/'"><i class="bi bi-arrow-right"></i></button>
-    <!-- دکمه پروفایل/کیف پول -->
-    <button class="fab-btn fab-top-left" onclick="location.href='/Wallet/Index'"><i class="bi bi-wallet2"></i></button>
+    <!-- لایه جدید: برند رولا -->
+    <div class="brand-on-map">ROLLA<span class="brand-dot">.</span></div>
 
-    <div class="fab-top-center">برای خودم <i class="bi bi-chevron-down ms-1"></i></div>
+    <!-- دکمه بازگشت راننده -->
+    <a href="/" class="btn-back-driver">
+        <i class="bi bi-house-fill" style="font-size: 1.4rem;"></i>
+    </a>
+
+    <!-- دکمه کیف پول (مرکز صفحه) -->
+    <a href="/Wallet/Index" class="top-action-btn btn-wallet">
+        <i class="bi bi-wallet2 text-success me-2 fs-5"></i>
+        <span>کیف پول</span>
+    </a>
 
     <!-- لایه ۳: پنل پایین (Bottom Sheet) -->
     <div class="bottom-sheet" id="bottom-sheet">
-
-        <!-- متن راهنمای کاربر (کجا می‌روید و...) -->
-        <div id="status-guide" class="status-text">📍 مبدأ را روی نقشه انتخاب کنید</div>
-
-        <!-- قیمت که فقط در مرحله ۳ نمایش داده می‌شود -->
+        <!-- ... بقیه کدها بدون تغییر بمانند ... -->
+        <div id="status-guide" class="status-text">📍 مبدأ و مقصد را روی نقشه انتخاب کنید</div>
         <div id="price-display" class="price-text">0 تومان</div>
-
-        <!-- دکمه اصلی (متصل به لاجیک قدیمی شما) -->
         <button id="btn-request" class="btn-main-action" disabled onclick="submitRequest()">
             درخواست رولا
         </button>
-
     </div>
 </div>
 

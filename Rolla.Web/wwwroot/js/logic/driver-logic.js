@@ -1,5 +1,9 @@
 ﻿// wwwroot/js/logic/driver-logic.js
 
+// ==========================================
+// 1. تنظیمات اولیه و متغیرها
+// ==========================================
+
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/rideHub")
     .withAutomaticReconnect([0, 2000, 10000, 30000])
@@ -11,18 +15,34 @@ let currentOfferId = null;
 let isWorkingOnTrip = false; // آیا در حال انجام سفر هستیم؟
 let activeTripId = null;    // آیدی سفری که قبول کردیم
 let navigationRouteLayer = null; // نگهدارنده خط قرمز/آبی روی نقشه
+let userMarker = null; // مارکر خود راننده روی نقشه
+
+// ==========================================
+// 2. اتصال به سرور (SignalR)
+// ==========================================
 
 async function startSignalR() {
     try {
         await connection.start();
         console.log("SignalR Connected ✅");
+
+        // تغییر وضعیت در UI
         document.getElementById('status-indicator').innerText = "آنلاین";
         document.getElementById('status-indicator').className = "text-success fw-bold";
+
+        // اگر تابع notify لود شده باشد (که در Layout هست)
+        if (typeof notify === "function") {
+            // notify("اتصال به مرکز برقرار شد", "success");
+        }
     } catch (err) {
         console.error("SignalR Error:", err);
         setTimeout(startSignalR, 5000);
     }
 }
+
+// ==========================================
+// 3. مدیریت وضعیت کاری (آنلاین/آفلاین)
+// ==========================================
 
 function toggleWork() {
     isOnline = !isOnline;
@@ -31,30 +51,38 @@ function toggleWork() {
     if (isOnline) {
         btn.innerText = "🔴 پایان کار";
         btn.className = "btn btn-danger w-100";
+        btn.style.boxShadow = "0 8px 25px rgba(239, 68, 68, 0.3)";
         startSendingLocation();
+        if (typeof notify === "function") notify("شما آنلاین شدید و قابل رویت هستید", "success");
     } else {
         btn.innerText = "🟢 شروع کار";
         btn.className = "btn btn-success w-100";
+        btn.style.boxShadow = "0 8px 25px rgba(34, 197, 94, 0.3)";
         stopSendingLocation();
+        if (typeof notify === "function") notify("شما آفلاین شدید", "warning");
     }
 }
 
 function startSendingLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+        if (typeof notify === "function") notify("مرورگر شما از موقعیت مکانی پشتیبانی نمی‌کند", "error");
+        return;
+    }
 
     locationInterval = setInterval(() => {
         navigator.geolocation.getCurrentPosition(pos => {
             const { latitude, longitude } = pos.coords;
 
-            // ۱. بروزرسانی مارکر راننده روی نقشه خودش
+            // الف) بروزرسانی مارکر راننده روی نقشه خودش
             if (userMarker) {
                 userMarker.setLatLng([latitude, longitude]);
             } else {
+                // آیکون پیش‌فرض یا آیکون ماشین
                 userMarker = L.marker([latitude, longitude]).addTo(map);
             }
             map.setView([latitude, longitude]);
 
-            // ۲. ارسال مختصات به سرور
+            // ب) ارسال مختصات به سرور
             // اگر در حال سفر هستیم، آیدی سفر را هم می‌فرستیم تا مسافر ببیند
             const tripIdToSend = isWorkingOnTrip ? activeTripId : null;
 
@@ -62,34 +90,57 @@ function startSendingLocation() {
                 .catch(err => console.error(err));
 
         }, err => console.error(err), { enableHighAccuracy: true });
-    }, 3000);
+    }, 3000); // هر ۳ ثانیه
 }
 
 function stopSendingLocation() {
     clearInterval(locationInterval);
-    isWorkingOnTrip = false;
-    activeTripId = null;
+    // ریست کردن وضعیت سفر در صورت آفلاین شدن دستی
+    // isWorkingOnTrip = false; 
+    // activeTripId = null;
 }
 
-// ۳. دریافت پیشنهاد سفر
+// ==========================================
+// 4. دریافت و مدیریت درخواست‌های سفر
+// ==========================================
+
+// دریافت پیشنهاد سفر از سرور
 connection.on("ReceiveTripOffer", function (trip) {
     currentOfferId = trip.tripId;
     document.getElementById('modal-price').innerText = trip.price.toLocaleString() + " تومان";
+    // فاصله فرضی (بعداً می‌توان دقیق‌تر کرد)
+    document.getElementById('modal-dist').innerText = "نزدیک شما";
 
     const modalEl = document.getElementById('tripModal');
-    // ابتدا چک کن آیا مودال از قبل وجود دارد یا خیر
     let myModal = bootstrap.Modal.getInstance(modalEl);
     if (!myModal) {
-        // اگر نبود، یکی جدید بساز
         myModal = new bootstrap.Modal(modalEl);
     }
     myModal.show();
+
+    // پخش صدای نوتیفیکیشن یا ویبره (اختیاری)
+    if (typeof notify === "function") notify("🔔 درخواست سفر جدید!", "info");
 });
 
+// رد کردن سفر
+function rejectTrip() {
+    if (!currentOfferId) return;
 
+    fetch(`/api/TripApi/reject/${currentOfferId}`, {
+        method: 'POST'
+    })
+        .then(res => {
+            if (res.ok) {
+                const modalElement = document.getElementById('tripModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) modalInstance.hide();
+                currentOfferId = null;
+            }
+        })
+        .catch(err => console.error(err));
+}
 
-// در فایل driver-logic.js تابع acceptTrip را پیدا و به شکل زیر اصلاح کنید:
-
+// قبول کردن سفر
 async function acceptTrip() {
     try {
         const res = await fetch(`/api/TripApi/accept/${currentOfferId}`, {
@@ -109,26 +160,34 @@ async function acceptTrip() {
             // ۳. تغییر UI
             showTripInfoPanel();
 
-            // ✨ ۴. فیکس اصلی: نمایش دکمه چت برای راننده همین‌جا ✨
-            document.getElementById('btn-open-chat').style.display = 'block';
+            // ۴. نمایش دکمه چت
+            const chatBtn = document.getElementById('btn-open-chat');
+            if (chatBtn) chatBtn.style.display = 'block';
 
-            // ۵. عضویت در گروه سفر (برای لوکیشن و چت)
+            // ۵. عضویت در گروه سفر و مسیریابی
             await connection.invoke("JoinTripGroup", activeTripId);
-            updateNavigationRoute(activeTripId); 
+            updateNavigationRoute(activeTripId);
+
+            if (typeof notify === "function") notify("✅ سفر با موفقیت رزرو شد", "success");
 
         } else {
-            alert("❌ متاسفانه سفر توسط راننده دیگری رزرو شد.");
+            // خطای رزرو
+            if (typeof notify === "function") notify("❌ متاسفانه سفر توسط راننده دیگری رزرو شد", "error");
+
             const modalElement = document.getElementById('tripModal');
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
             if (modalInstance) modalInstance.hide();
         }
     } catch (err) {
         console.error("Error accepting trip:", err);
+        if (typeof notify === "function") notify("خطا در ارتباط با سرور", "error");
     }
 }
 
+// ==========================================
+// 5. مدیریت پنل وضعیت سفر (UI Logic)
+// ==========================================
 
-// این تابع UI پنل راننده را بر اساس وضعیت سفر تغییر می‌دهد
 function showTripInfoPanel(status = 'Accepted') {
     const statusDiv = document.querySelector('.card-body');
 
@@ -142,14 +201,21 @@ function showTripInfoPanel(status = 'Accepted') {
         actionButtons = `<button class="btn btn-danger w-100 mb-2" onclick="sendFinish()">🏁 پایان سفر و دریافت پول</button>`;
     }
 
+    // ساختار HTML پنل پایین
     statusDiv.innerHTML = `
-        <h4 class="text-success">وضعیت: ${getStatusText(status)}</h4>
-        <div id="trip-actions" class="mt-3">
+        <h4 class="text-success mb-3">وضعیت: ${getStatusText(status)}</h4>
+        <div id="trip-actions" class="w-100">
             ${actionButtons}
         </div>
-        <hr/>
-        <button class="btn btn-dark w-100 mb-2" onclick="startSimulation()">🎮 شبیه‌سازی حرکت</button>
-        <button class="btn btn-outline-secondary w-100" onclick="openWaze()">مسیریابی</button>
+        <hr class="w-100 my-3"/>
+        <div class="row w-100 g-2">
+            <div class="col-6">
+                 <button class="btn btn-dark w-100" style="font-size: 0.9rem;" onclick="startSimulation()">🎮 شبیه‌سازی</button>
+            </div>
+            <div class="col-6">
+                 <button class="btn btn-outline-secondary w-100" style="font-size: 0.9rem;" onclick="openWaze()">🗺️ مسیریابی</button>
+            </div>
+        </div>
     `;
 }
 
@@ -162,49 +228,58 @@ function getStatusText(status) {
     }
 }
 
-// 1. تابع رسیدم به مبدا
+// ==========================================
+// 6. اکشن‌های تغییر وضعیت سفر
+// ==========================================
+
+// الف) اعلام رسیدن به مبدا
 async function sendArrived() {
     try {
         const res = await fetch(`/api/TripApi/arrive/${activeTripId}`, { method: 'POST' });
         if (res.ok) {
             showTripInfoPanel('Arrived');
-            alert("به مسافر اطلاع داده شد که رسیدید.");
+            if (typeof notify === "function") notify("📍 وضعیت: رسیدن به مبدا ثبت شد", "success");
         }
     } catch (err) { console.error(err); }
 }
 
-// 2. تابع شروع سفر
+// ب) شروع سفر
 async function sendStart() {
     try {
         const res = await fetch(`/api/TripApi/start/${activeTripId}`, { method: 'POST' });
         if (res.ok) {
             showTripInfoPanel('Started');
-            alert("سفر شروع شد! به سمت مقصد برانید.");
+            if (typeof notify === "function") notify("🚀 سفر شروع شد! مسیر تا مقصد روی نقشه است", "info");
             updateNavigationRoute(activeTripId); // رسم مسیر از مبدأ تا مقصد نهایی
         }
     } catch (err) { console.error(err); }
 }
 
-
+// ج) پایان سفر
 async function sendFinish() {
-    if (!confirm("آیا مطمئن هستید؟")) return;
+    if (!confirm("آیا از پایان سفر و دریافت هزینه اطمینان دارید؟")) return;
 
     try {
         const res = await fetch(`/api/TripApi/finish/${activeTripId}`, { method: 'POST' });
         if (res.ok) {
-            alert("✅ سفر تمام شد.");
+            if (typeof notify === "function") notify("✅ سفر با موفقیت به پایان رسید", "success");
 
-          
-            document.getElementById('chatBox').style.display = 'none';
-            document.getElementById('btn-open-chat').style.display = 'none';
+            // مخفی کردن چت
+            const chatBox = document.getElementById('chatBox');
+            const chatBtn = document.getElementById('btn-open-chat');
+            if (chatBox) chatBox.style.display = 'none';
+            if (chatBtn) chatBtn.style.display = 'none';
 
-            location.reload();
+            // ریلود صفحه برای آماده شدن برای سفر بعدی
+            setTimeout(() => { location.reload(); }, 2000);
         }
     } catch (err) { console.error(err); }
 }
 
+// ==========================================
+// 7. ابزارها (شبیه‌ساز، ویز، مسیریابی)
+// ==========================================
 
-// === شبیه‌ساز حرکت (فقط برای تست) ===
 let simulationInterval;
 
 function startSimulation() {
@@ -212,176 +287,59 @@ function startSimulation() {
     let lat = 35.71;
     let lng = 51.41;
 
-    // جهت حرکت (کمی کج حرکت کند تا طبیعی‌تر باشد)
+    // جهت حرکت
     const stepLat = 0.00015;
     const stepLng = 0.00015;
 
-    alert("🎮 شبیه‌سازی حرکت شروع شد! به پنل مسافر بروید.");
+    if (typeof notify === "function") notify("🎮 شبیه‌سازی حرکت شروع شد! در پنل مسافر حرکت را ببینید.", "info");
 
-    // جلوگیری از اجرای همزمان چند شبیه‌ساز
     if (simulationInterval) clearInterval(simulationInterval);
 
     simulationInterval = setInterval(() => {
         lat += stepLat;
         lng += stepLng;
 
-        // ۱. آپدیت آنی نقشه خود راننده (راننده نیاز به انیمیشن ندارد، GPS خودش است)
+        // ۱. آپدیت آنی نقشه خود راننده
         if (userMarker) {
             userMarker.setLatLng([lat, lng]);
         } else {
             userMarker = L.marker([lat, lng]).addTo(map);
         }
-        map.panTo([lat, lng]); // دوربین دنبال ماشین برود
+        map.panTo([lat, lng]);
 
         // ۲. ارسال به سرور
         if (isWorkingOnTrip && activeTripId) {
             connection.invoke("UpdateDriverLocation", lat, lng, activeTripId)
                 .catch(err => console.error(err));
         }
-    }, 1000); // ارسال هر ۱۰۰۰ میلی‌ثانیه (۱ ثانیه)
+    }, 1000);
 }
 
-
 function openWaze() {
-    // اینجا باید مختصات مسافر رو داشته باشیم (فعلا هاردکد شده)
     window.open("https://waze.com/ul?ll=35.71,51.41&navigate=yes");
 }
 
-// وقتی مودال باز می‌شود، دکمه Reject را صدا می‌زنیم
-function rejectTrip() {
-    if (!currentOfferId) return;
-
-    fetch(`/api/TripApi/reject/${currentOfferId}`, {
-        method: 'POST'
-    })
-        .then(res => {
-            if (res.ok) {
-                // بستن مودال
-                const modalElement = document.getElementById('tripModal');
-                const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                if (modalInstance) modalInstance.hide();
-
-                // پاک کردن متغیر پیشنهاد فعلی
-                currentOfferId = null;
-            }
-        })
-        .catch(err => console.error(err));
-}
-
-// مدیریت چت
-
-// ==========================================
-// مدیریت چت و وضعیت‌ها
-// ==========================================
-
-// 1. دریافت پیام (فقط همین یک تابع باید باشد)
-connection.on("ReceiveChatMessage", function (senderId, message) {
-    const chatMessages = document.getElementById('chatMessages');
-
-    // تشخیص دقیق "من" یا "مسافر" با استفاده از ID که در ویو تعریف کردیم
-    const isMe = (typeof currentUserId !== 'undefined') && (currentUserId === senderId);
-
-    const msgDiv = document.createElement('div');
-
-    // استایل‌دهی: آبی برای من، طوسی برای مسافر
-    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-primary text-white text-start' : 'bg-light text-dark text-end'}`;
-
-    // تنظیم نام فرستنده
-    const senderName = isMe ? "شما" : "مسافر";
-
-    msgDiv.innerHTML = `<small class="fw-bold d-block">${senderName}:</small> <span>${message}</span>`;
-
-    chatMessages.appendChild(msgDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight; // اسکرول به پایین
-
-    // اگر پنجره چت بسته است، دکمه را قرمز کن تا راننده متوجه شود
-    const chatBox = document.getElementById('chatBox');
-    if (chatBox && chatBox.style.display === 'none') {
-        const chatBtn = document.getElementById('btn-open-chat');
-        if (chatBtn) chatBtn.className = "btn btn-danger rounded-circle shadow-lg";
-    }
-});
-
-// 2. ارسال پیام توسط راننده
-async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-
-    // اگر پیامی نیست یا سفری در جریان نیست، کاری نکن
-    if (!message || !activeTripId) return;
-
-    try {
-        await connection.invoke("SendChatMessage", activeTripId, message);
-        input.value = "";
-        // نکته: اینجا پیام را دستی اضافه نمی‌کنیم تا دوبار چاپ نشود.
-        // منتظر می‌مانیم تا تابع ReceiveChatMessage از سرور بیاید.
-    } catch (err) {
-        console.error("خطا در ارسال پیام:", err);
-    }
-}
-
-// 3. نمایش دکمه چت وقتی سفر قبول شد
-connection.on("TripAccepted", function (data) {
-    activeTripId = data.tripId; // ست کردن آیدی سفر برای چت
-    const btnChat = document.getElementById('btn-open-chat');
-    if (btnChat) btnChat.style.display = 'block';
-});
-
-// 4. مدیریت تغییر وضعیت (پایان یا لغو سفر)
-connection.on("ReceiveStatusUpdate", function (message) {
-    console.log("وضعیت جدید دریافت شد:", message);
-
-    // اگر سفر تمام یا لغو شد، چت را ببند و مخفی کن
-    if (message === "Finished" || message === "Canceled") {
-        const chatBox = document.getElementById('chatBox');
-        const chatBtn = document.getElementById('btn-open-chat');
-
-        if (chatBox) chatBox.style.display = 'none';
-        if (chatBtn) chatBtn.style.display = 'none';
-
-        if (message === "Canceled") {
-            alert("⚠️ مسافر سفر را لغو کرد.");
-            location.reload();
-        }
-    }
-});
-
-// 5. دکمه باز/بسته کردن چت
-function toggleChat() {
-    const box = document.getElementById('chatBox');
-    if (box.style.display === 'none' || box.style.display === '') {
-        box.style.display = 'block';
-        // وقتی چت باز شد، رنگ دکمه را سبز (عادی) کن
-        document.getElementById('btn-open-chat').className = "btn btn-success rounded-circle shadow-lg";
-    } else {
-        box.style.display = 'none';
-    }
-}
 async function updateNavigationRoute(tripId) {
     try {
         const response = await fetch(`/api/TripApi/navigation/${tripId}`);
         if (!response.ok) return;
 
-        const data = await response.json(); // خروجی RouteResponseDto
+        const data = await response.json();
 
         if (data && data.encodedPolyline) {
-            // ۱. اگر از قبل خطی روی نقشه هست، پاکش کن
             if (navigationRouteLayer) {
                 map.removeLayer(navigationRouteLayer);
             }
 
-            // ۲. تبدیل رشته فشرده (Encoded Polyline) به آرایه‌ای از مختصات
             const coordinates = decodePolyline(data.encodedPolyline);
 
-            // ۳. رسم خط جدید روی نقشه
             navigationRouteLayer = L.polyline(coordinates, {
-                color: '#2ecc71', // رنگ سبز برای مسیر
+                color: '#2ecc71',
                 weight: 6,
                 opacity: 0.8,
                 lineJoin: 'round'
             }).addTo(map);
 
-            // ۴. تنظیم زوم نقشه برای دیدن کل مسیر
             map.fitBounds(navigationRouteLayer.getBounds(), { padding: [50, 50] });
         }
     } catch (error) {
@@ -389,7 +347,6 @@ async function updateNavigationRoute(tripId) {
     }
 }
 
-// تابع کمکی برای رمزگشایی Polyline (استاندارد OSRM/Google)
 function decodePolyline(str, precision) {
     var index = 0, lat = 0, lng = 0, coordinates = [], shift = 0, result = 0, byte = null, latitude_change, longitude_change, factor = Math.pow(10, precision || 5);
     while (index < str.length) {
@@ -403,8 +360,95 @@ function decodePolyline(str, precision) {
     }
     return coordinates;
 };
+
 // ==========================================
-// شروع برنامه
+// 8. سیستم چت
 // ==========================================
-initMap();
+
+// دریافت پیام
+connection.on("ReceiveChatMessage", function (senderId, message) {
+    const chatMessages = document.getElementById('chatMessages');
+
+    const isMe = (typeof currentUserId !== 'undefined') && (currentUserId === senderId);
+    const msgDiv = document.createElement('div');
+
+    // استایل‌دهی پیام‌ها
+    msgDiv.className = `mb-2 p-2 rounded ${isMe ? 'bg-primary text-white text-start' : 'bg-light text-dark text-end'}`;
+    const senderName = isMe ? "شما" : "مسافر";
+    msgDiv.innerHTML = `<small class="fw-bold d-block">${senderName}:</small> <span>${message}</span>`;
+
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // نوتیفیکیشن چت اگر بسته باشد
+    const chatBox = document.getElementById('chatBox');
+    if (chatBox && (chatBox.style.display === 'none' || chatBox.style.display === '')) {
+        const chatBtn = document.getElementById('btn-open-chat');
+        if (chatBtn) {
+            chatBtn.className = "btn btn-danger rounded-circle shadow-lg d-flex align-items-center justify-content-center";
+        }
+        if (typeof notify === "function") notify("💬 پیام جدید از مسافر", "info");
+    }
+});
+
+// ارسال پیام
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+
+    if (!message || !activeTripId) return;
+
+    try {
+        await connection.invoke("SendChatMessage", activeTripId, message);
+        input.value = "";
+    } catch (err) {
+        console.error("خطا در ارسال پیام:", err);
+    }
+}
+
+// فعال‌سازی چت هنگام قبول سفر
+connection.on("TripAccepted", function (data) {
+    activeTripId = data.tripId;
+    const btnChat = document.getElementById('btn-open-chat');
+    if (btnChat) btnChat.style.display = 'block';
+});
+
+// مدیریت وضعیت چت هنگام پایان/لغو
+connection.on("ReceiveStatusUpdate", function (message) {
+    console.log("Status Update:", message);
+
+    if (message === "Finished" || message === "Canceled") {
+        const chatBox = document.getElementById('chatBox');
+        const chatBtn = document.getElementById('btn-open-chat');
+
+        if (chatBox) chatBox.style.display = 'none';
+        if (chatBtn) chatBtn.style.display = 'none';
+
+        if (message === "Canceled") {
+            if (typeof notify === "function") notify("⚠️ مسافر سفر را لغو کرد", "error");
+            setTimeout(() => { location.reload(); }, 2000);
+        }
+    }
+});
+
+// باز و بسته کردن چت
+function toggleChat() {
+    const box = document.getElementById('chatBox');
+    const btn = document.getElementById('btn-open-chat');
+
+    if (box.style.display === 'none' || box.style.display === '') {
+        box.style.display = 'block';
+        if (btn) btn.className = "btn btn-success rounded-circle shadow-lg d-flex align-items-center justify-content-center";
+    } else {
+        box.style.display = 'none';
+    }
+}
+
+// ==========================================
+// 9. راه‌اندازی نهایی
+// ==========================================
+// اطمینان از لود شدن نقشه
+if (typeof initMap === "function") {
+    initMap();
+}
 startSignalR();

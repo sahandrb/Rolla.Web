@@ -16,7 +16,7 @@
         padding: 0 !important;
         margin: 0 !important;
         overflow: hidden;
-        background: #e2e8f0;
+        background: #eee;
     }
 
     /* کانتینر اصلی */
@@ -35,38 +35,70 @@
         z-index: 1;
     }
 
-    /* دکمه‌های شناور (FAB) */
-    .fab-btn {
+    /* --- لوگوی روی نقشه --- */
+    .brand-on-map {
         position: absolute;
         top: 20px;
-        background: white;
-        border: none;
-        border-radius: 50%;
-        width: 45px;
-        height: 45px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        right: 20px;
+        z-index: 1000;
+        color: white;
+        font-size: 2.2rem;
+        font-weight: 900;
+        text-shadow: 0 4px 15px rgba(0,0,0,0.6); /* سایه غلیظ تر برای خوانایی روی نقشه */
+        letter-spacing: 2px;
+        pointer-events: none; /* تا مزاحم کلیک روی نقشه نشود */
+    }
+
+    .brand-dot {
+        color: #22c55e;
+    }
+    @@media (min-width: 768px) {
+        .brand-on-map
+
+    {
+        top: 40px;
+        right: 40px;
+        font-size: 3rem;
+    }
+
+    }
+    /* --- دکمه بازگشت راننده (قرینه با لوگو) --- */
+    .btn-back-driver {
+        position: absolute;
+        top: 20px;
+        left: 20px; /* قرارگیری در سمت چپ قرینه لوگو */
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         z-index: 1001;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.2rem;
-        color: #333;
-        transition: transform 0.2s;
+        color: #1e293b;
+        text-decoration: none;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        font-size: 1.3rem;
+        transition: all 0.2s;
     }
 
-        .fab-btn:active {
-            transform: scale(0.9);
+        .btn-back-driver:active {
+            transform: scale(0.95);
         }
 
-    .fab-top-right {
-        right: 20px;
+    @@media (min-width: 768px) {
+        .btn-back-driver
+
+    {
+        left: 40px;
+        top: 30px;
     }
 
-    .fab-top-left {
-        left: 20px;
     }
 
-    /* پنل کنترل پایین صفحه (Bottom Sheet) */
+    /* پنل کنترل پایین صفحه (دقیقا شبیه مسافر - تمام عرض) */
     .driver-bottom-sheet {
         position: absolute;
         bottom: 0;
@@ -76,26 +108,28 @@
         border-radius: 25px 25px 0 0;
         padding: 25px 20px 30px 20px;
         z-index: 1001;
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
         display: flex;
         flex-direction: column;
         align-items: center;
+        transition: all 0.3s ease;
     }
 
-        /* استایل دکمه اصلی (شروع کار / پایان کار / رسیدم به مبدا و ...) */
-        /* جاوااسکریپت شما کلاس btn-success و btn-danger را به این میدهد، ما آن را زیباتر میکنیم */
+        /* استایل دکمه‌های اصلی پنل پایین */
         .driver-bottom-sheet .btn {
-            border-radius: 16px;
+            border-radius: 15px;
             padding: 16px;
             font-size: 1.2rem;
-            font-weight: 800;
+            font-weight: bold;
             border: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px; /* در مانیتور بزرگ دکمه خیلی کش نیاید */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             transition: all 0.2s;
         }
 
             .driver-bottom-sheet .btn:active {
-                transform: scale(0.97);
+                transform: scale(0.98);
             }
 
     .status-badge {
@@ -105,12 +139,12 @@
         font-weight: bold;
         font-size: 1rem;
         color: #475569;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         border: 1px solid #e2e8f0;
         display: inline-block;
     }
 
-    /* سفارشی‌سازی Modal درخواست سفر */
+    /* استایل های مودال و چت (بدون تغییر بمانند) */
     .custom-modal-content {
         border-radius: 24px;
         border: none;
@@ -139,7 +173,6 @@
         letter-spacing: -1px;
     }
 
-    /* دکمه‌های مودال */
     .btn-accept-trip {
         background: #22c55e;
         color: white;
@@ -161,7 +194,6 @@
         width: 100%;
     }
 
-    /* سفارشی‌سازی چت */
     .chat-container {
         border-radius: 20px !important;
         overflow: hidden;
@@ -173,42 +205,30 @@
         background: #22c55e !important;
     }
 
-    /* رفع عرض پنل در دسکتاپ */
-    @@media (min-width: 992px) {
-        .driver-bottom-sheet
-
-    {
-        width: 400px;
-        left: 50%;
-        transform: translateX(-50%);
-        bottom: 30px;
-        border-radius: 24px;
-    }
-
-    }
+    /* ⚠️ مدیا کوئری ایجاد کننده حالت جزیره ای به طور کامل حذف شد ⚠️ */
 </style>
 
 <div class="app-wrapper">
     <!-- لایه ۱: نقشه -->
     <div id="map"></div>
 
-    <!-- لایه ۲: دکمه‌های کنترلی -->
-    <button class="fab-btn fab-top-right" onclick="location.href='/'"><i class="bi bi-arrow-right"></i></button>
-    <button class="fab-btn fab-top-left" onclick="location.href='/Wallet/Index'"><i class="bi bi-wallet2"></i></button>
+    <!-- لایه جدید: برند رولا -->
+    <div class="brand-on-map">ROLLA<span class="brand-dot">.</span></div>
 
-    <!-- لایه ۳: پنل کنترل راننده -->
+    <!-- دکمه بازگشت راننده -->
+    <a href="/" class="btn-back-driver">
+        <i class="bi bi-house-fill" style="font-size: 1.4rem;"></i>
+    </a>
+
+    <!-- لایه ۳: پنل کنترل راننده (بدون تغییر در تگ ها) -->
     <div class="driver-bottom-sheet">
-        <!-- نکته مهم: کلاس card-body حفظ شده تا تابع showTripInfoPanel() جاوااسکریپت کار کند -->
         <div class="card-body w-100 text-center p-0">
-
             <div class="status-badge">
                 وضعیت: <span id="status-indicator" class="text-danger">آفلاین</span>
             </div>
-
-            <button id="btn-toggle" class="btn btn-success w-100" onclick="toggleWork()">
+            <button id="btn-toggle" class="btn btn-success w-100" style="max-width: 500px;" onclick="toggleWork()">
                 شروع کار
             </button>
-
         </div>
     </div>
 </div>

@@ -292,35 +292,31 @@
     <i class="bi bi-chat-text-fill"></i>
 </button>
 
+
 @section Scripts {
     <script>
         // متغیرهای مورد نیاز لاجیک
         var currentUserId = '@currentUserId';
     </script>
 
-    <!-- کدهای لاجیک قبلی بدون تغییر -->
-    <script src="~/js/core/map-base.js"></script>
-    <script src="~/js/logic/driver-logic.js"></script>
+    <!-- اضافه کردن asp-append-version باعث می‌شود کش مرورگر بی‌اثر شود -->
+    <script src="~/js/core/map-base.js" asp-append-version="true"></script>
+    <script src="~/js/logic/driver-logic.js" asp-append-version="true"></script>
 
-    <!-- کدهای کمکی برای تغییر UI دکمه روشن/خاموش -->
     <script>
-        // مانیتور کردن تغییرات دکمه اصلی (چون لاجیک شما کلاس و متن آن را عوض می‌کند)
         document.addEventListener("DOMContentLoaded", function () {
             const btnToggle = document.getElementById('btn-toggle');
             const statusInd = document.getElementById('status-indicator');
 
-            // وقتی لاجیک شما کلاس دکمه را عوض میکند، رنگ نوشته وضعیت را هم عوض کنیم
             const observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.attributeName === "class") {
                         if(btnToggle.classList.contains('btn-danger')) {
-                            // یعنی راننده آنلاین شده و دکمه قرمز (پایان کار) شده است
                             statusInd.innerText = "آنلاین و آماده مسافرگیری";
-                            statusInd.className = "text-success";
+                            statusInd.className = "text-success fw-bold";
                         } else {
-                            // یعنی آفلاین است
                             statusInd.innerText = "آفلاین";
-                            statusInd.className = "text-danger";
+                            statusInd.className = "text-danger fw-bold";
                         }
                     }
                 });
@@ -331,4 +327,5 @@
             }
         });
     </script>
+}
 }

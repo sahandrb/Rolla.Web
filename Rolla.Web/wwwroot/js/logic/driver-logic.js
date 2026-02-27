@@ -15,7 +15,7 @@ let currentOfferId = null;
 let isWorkingOnTrip = false; // آیا در حال انجام سفر هستیم؟
 let activeTripId = null;    // آیدی سفری که قبول کردیم
 let navigationRouteLayer = null; // نگهدارنده خط قرمز/آبی روی نقشه
-let userMarker = null; // مارکر خود راننده روی نقشه
+
 
 // ==========================================
 // 2. اتصال به سرور (SignalR)
@@ -445,10 +445,14 @@ function toggleChat() {
 }
 
 // ==========================================
-// 9. راه‌اندازی نهایی
+// 9. راه‌اندازی نهایی (اصلاح شده)
 // ==========================================
-// اطمینان از لود شدن نقشه
-if (typeof initMap === "function") {
-    initMap();
-}
-startSignalR();
+document.addEventListener("DOMContentLoaded", function () {
+    // اطمینان از لود شدن نقشه پس از ساخته شدن تگ‌های HTML
+    if (typeof initMap === "function") {
+        initMap();
+    }
+
+    // بعد از لود نقشه، به سرور متصل شو
+    startSignalR();
+});

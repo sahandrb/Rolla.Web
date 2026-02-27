@@ -1,10 +1,15 @@
-﻿// wwwroot/js/core/map-base.js
-var map; // استفاده از var برای دسترسی سراسری
+﻿var map;
 var userMarker;
 
 function initMap(lat = 35.71, lng = 51.41, zoom = 13) {
-    // اگر نقشه قبلاً ساخته شده، دوباره نساز
     if (map) return map;
+
+    // پیدا کردن تگ نقشه در HTML
+    var mapContainer = document.getElementById('map');
+    if (!mapContainer) {
+        console.error("تگ با آیدی map در صفحه وجود ندارد!");
+        return null;
+    }
 
     map = L.map('map').setView([lat, lng], zoom);
 
@@ -12,10 +17,10 @@ function initMap(lat = 35.71, lng = 51.41, zoom = 13) {
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // یک ترفند برای اطمینان از رندر شدن نقشه بعد از لود صفحه
+    // آپدیت کردن سایز نقشه بعد از لود شدن برای جلوگیری از خاکستری شدن
     setTimeout(function () {
         map.invalidateSize();
-    }, 400);
+    }, 500);
 
     return map;
 }

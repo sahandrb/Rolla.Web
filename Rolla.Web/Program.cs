@@ -80,7 +80,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddHttpClient<IRoutingService, OsrmRoutingService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
-
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 
 
@@ -101,7 +101,20 @@ if (app.Environment.IsDevelopment())
 {
     // app.UseMigrationsEndPoint(); // این اگر لازم بود بماند
 }
-// ...
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+
+    // فراخوانی متد جدید
+    await Rolla.Infrastructure.Seed.DbInitializer.SeedRolesAndSuperAdminAsync(roleManager, userManager);
+}
+
+
+
 
 
 app.UseHttpsRedirection();

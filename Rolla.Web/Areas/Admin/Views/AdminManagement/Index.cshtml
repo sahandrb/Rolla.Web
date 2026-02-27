@@ -1,0 +1,36 @@
+﻿@model List<string>
+@{
+    ViewData["Title"] = "مدیریت مدیران";
+}
+
+<div class="container mt-4">
+    <h2>👑 مدیریت مدیران سیستم</h2>
+
+    <!-- فرم افزودن ادمین جدید -->
+    <div class="card p-3 my-3 bg-light">
+        <h5>افزودن ادمین جدید</h5>
+        <form asp-action="MakeAdmin" method="post" class="d-flex gap-2">
+            <input type="email" name="email" class="form-control" placeholder="ایمیل کاربر را وارد کنید..." required />
+            <button type="submit" class="btn btn-primary">ارتقا به ادمین</button>
+        </form>
+    </div>
+
+    <!-- لیست ادمین‌های فعلی -->
+    <table class="table">
+        <thead><tr><th>ایمیل</th><th>عملیات</th></tr></thead>
+        <tbody>
+            @foreach (var adminEmail in Model)
+            {
+                <tr>
+                    <td>@adminEmail</td>
+                    <td>
+                        <form asp-action="Revoke" method="post">
+                            <input type="hidden" name="email" value="@adminEmail" />
+                            <button class="btn btn-sm btn-danger">عزل کردن</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore; // برای ToListAsync
 using Rolla.Application.Interfaces;
+using Rolla.Domain.Common.Constants;
 using Rolla.Domain.Entities;
 using Rolla.Domain.Enums;
 
 namespace Rolla.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")] // بعداً فعالش کن
+    [Authorize(Roles = Roles.SuperAdmin + "," + Roles.Admin)]
     public class DriverManagementController : Controller
     {
         private readonly IDriverService _driverService; 

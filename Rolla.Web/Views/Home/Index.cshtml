@@ -1,4 +1,6 @@
-﻿@{
+﻿@using Rolla.Domain.Common.Constants
+
+@{
     ViewData["Title"] = "رولا - سیستم هوشمند درخواست خودرو";
 }
 
@@ -267,6 +269,14 @@
                 <i class="bi bi-car-front-fill fs-4 me-3"></i>
                 ورود به پنل راننده
             </a>
+
+            @if (User.IsInRole(Roles.SuperAdmin) || User.IsInRole(Roles.Admin))
+            {
+                <a href="/Admin/DriverManagement" class="btn-modern btn-danger text-decoration-none mb-3">
+                    <i class="bi bi-shield-lock-fill fs-4 me-3"></i>
+                    ورود به پنل مدیریت
+                </a>
+            }
 
             <div class="d-flex align-items-center my-4">
                 <hr class="flex-grow-1 text-muted">

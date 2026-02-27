@@ -26,7 +26,7 @@ namespace Rolla.Web.Areas.Driver.Controllers
             // اگر هنوز ثبت‌نام نکرده -> برو ثبت‌نام
             if (user.DriverStatus == DriverStatus.None)
             {
-                return RedirectToAction("Register");
+                return RedirectToAction("Index", "Register", new { area = "Driver" });
             }
 
             // اگر منتظر تایید است -> برو صفحه انتظار
@@ -45,27 +45,5 @@ namespace Rolla.Web.Areas.Driver.Controllers
             return View();
         }
 
-        // ۲. نمایش فرم ثبت‌نام
-        [HttpGet]
-        public IActionResult Register()
-        {
-            return View();
-        }
-
-        // ۳. پردازش ثبت‌نام
-        [HttpPost]
-        public async Task<IActionResult> Register(string carModel, string plateNumber)
-        {
-            var user = await _userManager.GetUserAsync(User);
-
-            user.CarModel = carModel;
-            user.PlateNumber = plateNumber;
-            user.IsDriver = true;
-            user.DriverStatus = DriverStatus.Pending; // مهم: وضعیت میره روی "در حال بررسی"
-
-            await _userManager.UpdateAsync(user);
-
-            return RedirectToAction("Index");
-        }
     }
 }

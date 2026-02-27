@@ -230,28 +230,9 @@
 
                             <!-- عملیات -->
                             <td>
-                                @if (driver.DriverStatus == DriverStatus.Pending)
-                                {
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <form asp-area="Admin" asp-controller="DriverManagement" asp-action="Approve" method="post">
-                                            <input type="hidden" name="userId" value="@driver.Id" />
-                                            <button type="submit" class="btn-action btn-approve" title="تایید راننده">
-                                                <i class="bi bi-check-lg"></i> قبول
-                                            </button>
-                                        </form>
-
-                                        <form asp-area="Admin" asp-controller="DriverManagement" asp-action="Reject" method="post">
-                                            <input type="hidden" name="userId" value="@driver.Id" />
-                                            <button type="submit" class="btn-action btn-reject" title="رد کردن مدارک">
-                                                <i class="bi bi-x-lg"></i> رد
-                                            </button>
-                                        </form>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="text-muted small fw-bold"><i class="bi bi-check2-all text-success me-1"></i> بررسی شده</span>
-                                }
+                                <a asp-action="Details" asp-route-id="@driver.Id" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                    <i class="bi bi-eye-fill me-1"></i> بررسی مدارک
+                                </a>
                             </td>
                         </tr>
                     }

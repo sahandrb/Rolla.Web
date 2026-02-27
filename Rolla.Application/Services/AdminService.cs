@@ -41,7 +41,7 @@ public class AdminService : IAdminService
         // لیست ایمیل کسانی که ادمین هستند
         var admins = await _userManager.GetUsersInRoleAsync(Roles.Admin);
         return admins.Select(u => u.Email!).ToList();
-    }
+    }  
 
     public async Task<bool> RevokeAdminAsync(string email)
     {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Rolla.Application.DTOs.Admin;
 using Rolla.Application.DTOs.Auth;
 using Rolla.Application.Interfaces;
 using Rolla.Domain.Entities;
@@ -119,8 +120,42 @@ public class DriverService : IDriverService
         await _userManager.UpdateAsync(user);
         return true;
     }
-} // این آخرین براکت کلاس است
 
-    // ... ApproveDriverAsync ...
-    // ... RejectDriverAsync ...
+    public async Task<DriverDetailsDto?> GetDriverDetailsAsync(string driverId)
+    {
+        // گرفتن کاربر به همراه مدارکش از دیتابیس
+        var user = await _context.Users
+            .Include(u => u.Documents)
+            .FirstOrDefaultAsync(u => u.Id == driverId);
 
+        if (user == null) return null;
+
+        // مپ کردن به DTO (بدون ارسال مسیر فیزیکی فایل به لایه وب)
+        return new DriverDetailsDto
+        {
+            Id = user.Id,
+            Email = user.Email!,
+            FullName = user.FullName,
+            CarModel = user.CarModel ?? "نامشخص",
+            PlateNumber = user.PlateNumber ?? "نامشخص",
+            Status = user.DriverStatus,
+            Documents = user.Documents.Select(d => new DriverDocumentDto
+            {
+                Id = d.Id,
+                Type = d.Type,
+                ContentType = d.ContentType
+            }).ToList()
+        };
+    }
+
+    public async Task<(byte[] FileBytes, string ContentType)?> GetDocumentFileAsync(int documentId)
+    {
+        var document = await _context.DriverDocuments.FindAsync(documentId);
+        if (document == null) return null;
+
+        // خواندن امن فایل از طریق سرویس فایل
+        var bytes = await _fileStorage.GetFileBytesAsync(document.FilePath);
+
+        return (bytes, document.ContentType);
+    }
+}

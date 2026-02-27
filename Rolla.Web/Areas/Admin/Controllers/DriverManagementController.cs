@@ -39,5 +39,27 @@ namespace Rolla.Web.Areas.Admin.Controllers
             await _driverService.RejectDriverAsync(userId);
             return RedirectToAction("Index");
         }
+        // 1. نمایش صفحه جزئیات راننده
+        [HttpGet]
+        public async Task<IActionResult> Details(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest();
+
+            var details = await _driverService.GetDriverDetailsAsync(id);
+            if (details == null) return NotFound("راننده یافت نشد.");
+
+            return View(details); // ارسال DTO به View
+        }
+
+        // 2. اکشن بازگرداندن عکس (Gateway امنیتی فایل‌ها)
+        [HttpGet]
+        public async Task<IActionResult> GetDocumentImage(int id)
+        {
+            var result = await _driverService.GetDocumentFileAsync(id);
+            if (result == null) return NotFound();
+
+            // تبدیل بایت‌ها به فایل تصویری در مرورگر
+            return File(result.Value.FileBytes, result.Value.ContentType);
+        }
     }
 }

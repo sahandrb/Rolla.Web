@@ -62,6 +62,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 // سرویس مکان‌یابی با ردیس (حل مشکل خطای قبلی شما)
 builder.Services.AddScoped<IGeoLocationService, RedisLocationService>();
 
+
 // ====================================================
 // 5. سرویس‌های پس‌زمینه (Background Services)
 // ====================================================

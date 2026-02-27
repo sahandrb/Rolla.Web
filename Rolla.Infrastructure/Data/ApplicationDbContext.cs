@@ -55,6 +55,16 @@ namespace Rolla.Infrastructure.Data
             builder.Entity<ApplicationUser>()
        .Property(u => u.WalletBalance)
        .HasDefaultValue(0m); // موجودی اولیه همه 0 باشد
+
+
+            // ✨ اضافه کردن این بخش برای برقراری رابطه بین کاربر و مدارک
+            builder.Entity<DriverDocument>()
+                .HasOne<ApplicationUser>()
+                .WithMany(u => u.Documents)
+                .HasForeignKey(d => d.DriverId)
+                .OnDelete(DeleteBehavior.Cascade); // اگر کاربر پاک شد، مدارکش هم پاک شود
+
+
         }
     }
 

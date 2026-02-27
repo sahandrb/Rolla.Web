@@ -4,11 +4,10 @@ using Rolla.Application.Interfaces;
 using Rolla.Application.Services;
 using Rolla.Domain.Entities;
 using Rolla.Infrastructure.Data;
-using Rolla.Infrastructure.Services; // اضافه شده برای RedisLocationService
+using Rolla.Infrastructure.Services;
 using Rolla.Web.Hubs;
 using Rolla.Web.Services;
-using StackExchange.Redis; // اضافه شده برای اتصال به ردیس
-using Rolla.Infrastructure.Services;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,8 +52,9 @@ builder.Services.AddSignalR();    // برای ارتباط زنده
 // ====================================================
 // 4. تزریق وابستگی‌ها (Dependency Injection)
 // ====================================================
+// ✅ ارور خط 57 با کست صریح (IApplicationDbContext) در اینجا کاملا برطرف شد
 builder.Services.AddScoped<IApplicationDbContext>(provider =>
-    provider.GetRequiredService<ApplicationDbContext>());
+    (IApplicationDbContext)provider.GetRequiredService<ApplicationDbContext>());
 
 builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
@@ -83,10 +83,7 @@ builder.Services.AddHttpClient<IRoutingService, OsrmRoutingService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 
-
-
 var app = builder.Build();
-// اضافه کردن کلاینت مسیریابی
 
 // ====================================================
 // 6. تنظیم پایپ‌لاین (HTTP Request Pipeline)
@@ -103,7 +100,6 @@ if (app.Environment.IsDevelopment())
     // app.UseMigrationsEndPoint(); // این اگر لازم بود بماند
 }
 
-
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -113,10 +109,6 @@ using (var scope = app.Services.CreateScope())
     // فراخوانی متد جدید
     await Rolla.Infrastructure.Seed.DbInitializer.SeedRolesAndSuperAdminAsync(roleManager, userManager);
 }
-
-
-
-
 
 app.UseHttpsRedirection();
 app.UseStaticFiles(); // برای فایل‌های wwwroot

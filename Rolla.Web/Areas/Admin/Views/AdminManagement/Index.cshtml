@@ -1,36 +1,246 @@
 ﻿@model List<string>
 @{
-    ViewData["Title"] = "مدیریت مدیران";
+    ViewData["Title"] = "مدیریت مدیران سیستم";
 }
 
-<div class="container mt-4">
-    <h2>👑 مدیریت مدیران سیستم</h2>
+<style>
+    /* استایل‌های پایه داشبورد ادمین */
+    body {
+        background-color: #f8fafc;
+    }
 
-    <!-- فرم افزودن ادمین جدید -->
-    <div class="card p-3 my-3 bg-light">
-        <h5>افزودن ادمین جدید</h5>
-        <form asp-action="MakeAdmin" method="post" class="d-flex gap-2">
-            <input type="email" name="email" class="form-control" placeholder="ایمیل کاربر را وارد کنید..." required />
-            <button type="submit" class="btn btn-primary">ارتقا به ادمین</button>
-        </form>
+    /* سوئیچر مدرن */
+    .admin-switcher {
+        background: #e2e8f0;
+        border-radius: 50px;
+        padding: 6px;
+        display: inline-flex;
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+        .admin-switcher .btn {
+            border-radius: 50px;
+            padding: 10px 25px;
+            font-weight: bold;
+            color: #64748b;
+            transition: all 0.3s;
+        }
+
+            .admin-switcher .btn.active {
+                background: white;
+                color: #0f172a;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            }
+
+    /* کارت‌های اصلی */
+    .admin-card {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.03);
+        border: none;
+        overflow: hidden;
+        height: 100%;
+    }
+
+    /* اینپوت اختصاصی فرم ارتقا */
+    .custom-input {
+        border-radius: 14px 0 0 14px !important;
+        border: 2px solid #e2e8f0;
+        border-left: none;
+        padding: 12px 20px;
+        background-color: #f8fafc;
+        transition: all 0.3s;
+        box-shadow: none !important;
+    }
+
+        .custom-input:focus {
+            background-color: #ffffff;
+            border-color: #6366f1;
+        }
+
+    .btn-upgrade {
+        border-radius: 0 14px 14px 0 !important;
+        background: #6366f1; /* رنگ بنفش/نیلی برای حس سیستم/ادمین */
+        color: white;
+        font-weight: 800;
+        padding: 0 25px;
+        border: none;
+        transition: all 0.2s;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+        .btn-upgrade:hover {
+            background: #4f46e5;
+            color: white;
+        }
+
+    /* استایل جدول */
+    .table-modern th {
+        background-color: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border-bottom: none;
+        padding: 18px 15px;
+    }
+
+    .table-modern td {
+        padding: 18px 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .table-modern tbody tr {
+        transition: all 0.2s;
+    }
+
+        .table-modern tbody tr:hover {
+            background-color: #f8fafc;
+            transform: scale(1.005);
+        }
+
+    /* دکمه عزل کردن */
+    .btn-revoke {
+        background: #ffe4e6;
+        color: #e11d48;
+        border-radius: 50px;
+        font-weight: 700;
+        padding: 6px 16px;
+        transition: all 0.2s;
+        border: none;
+    }
+
+        .btn-revoke:hover {
+            background: #fecdd3;
+            color: #be123c;
+            transform: translateY(-2px);
+        }
+
+    /* آلرت‌های نرم */
+    .alert-modern {
+        border-radius: 12px;
+        border: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="container mt-5 mb-5">
+
+    <!-- هدر و سوئیچر تب‌ها -->
+    <div class="d-flex flex-column align-items-center mb-5">
+        <h2 class="fw-bold mb-4" style="color: #0f172a;"> داشبورد مدیریت رولا<span style="color:#6366f1;">.</span></h2>
+
+        <div class="admin-switcher">
+            <a href="/Admin/DriverManagement" class="btn text-decoration-none">
+                <i class="bi bi-car-front-fill me-2"></i> درخواست‌های رانندگان
+            </a>
+            <a href="/Admin/AdminManagement" class="btn active">
+                <i class="bi bi-shield-lock-fill me-2"></i> مدیران سیستم
+            </a>
+        </div>
     </div>
 
-    <!-- لیست ادمین‌های فعلی -->
-    <table class="table">
-        <thead><tr><th>ایمیل</th><th>عملیات</th></tr></thead>
-        <tbody>
-            @foreach (var adminEmail in Model)
-            {
-                <tr>
-                    <td>@adminEmail</td>
-                    <td>
-                        <form asp-action="Revoke" method="post">
-                            <input type="hidden" name="email" value="@adminEmail" />
-                            <button class="btn btn-sm btn-danger">عزل کردن</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="row g-4">
+
+        <!-- ستون سمت راست: فرم افزودن ادمین جدید -->
+        <div class="col-lg-5">
+            <div class="admin-card p-4">
+
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                        <i class="bi bi-person-up fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1" style="color: #1e293b;">ارتقا به مدیر</h5>
+                        <small class="text-muted">افزودن همکار جدید به پنل مدیریت</small>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 rounded-3 p-3 mb-4 border" style="background-color: #f8fafc; border-color: #e2e8f0;">
+                    <p class="text-muted small mb-0 lh-lg">
+                        <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                        ایمیل کاربری که قبلاً در سایت ثبت‌نام کرده است را وارد کنید. پس از ارتقا، این کاربر به تمامی بخش‌های ادمین دسترسی خواهد داشت.
+                    </p>
+                </div>
+
+                <form asp-action="MakeAdmin" method="post">
+                    <div class="input-group mb-3" dir="ltr">
+                        <input type="email" name="email" class="form-control custom-input" placeholder="user@example.com" required autocomplete="off" />
+                        <button type="submit" class="btn btn-upgrade">ارتقا 🚀</button>
+                    </div>
+                </form>
+
+                <!-- پیام‌های موفقیت یا خطا -->
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success alert-modern bg-success bg-opacity-10 text-success mt-3 mb-0 d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                        @TempData["Success"]
+                    </div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger alert-modern bg-danger bg-opacity-10 text-danger mt-3 mb-0 d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                        @TempData["Error"]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ستون سمت چپ: لیست ادمین‌های فعلی -->
+        <div class="col-lg-7">
+            <div class="admin-card">
+                <div class="table-responsive h-100">
+                    <table class="table table-modern align-middle mb-0 text-center h-100">
+                        <thead>
+                            <tr>
+                                <th class="text-start ps-5">ایمیل دسترسی ادمین</th>
+                                <th>عملیات امنیتی</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="2" class="py-5">
+                                        <div class="text-muted d-flex flex-column align-items-center my-4">
+                                            <i class="bi bi-shield-x fs-1 mb-2 text-light-emphasis"></i>
+                                            <h6 class="fw-bold">هیچ همکار ادمینی وجود ندارد</h6>
+                                            <p class="small">در حال حاضر شما تنها مدیر سیستم هستید.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+
+                            @foreach (var adminEmail in Model)
+                            {
+                                <tr>
+                                    <td class="text-start ps-4 fw-bold" style="color: #334155;">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-indigo text-indigo rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background-color: rgba(99, 102, 241, 0.1); color: #4f46e5;">
+                                                <i class="bi bi-shield-check fs-5"></i>
+                                            </div>
+                                            <span dir="ltr">@adminEmail</span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <form asp-action="Revoke" method="post" onsubmit="return confirm('آیا از عزل این مدیر اطمینان دارید؟ دسترسی او فورا قطع خواهد شد.');">
+                                            <input type="hidden" name="email" value="@adminEmail" />
+                                            <button type="submit" class="btn-revoke" title="حذف دسترسی مدیریت">
+                                                <i class="bi bi-trash3-fill me-1"></i> عزل کردن
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>

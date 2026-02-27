@@ -88,8 +88,10 @@ public class DriverService : IDriverService
 
     public async Task<List<ApplicationUser>> GetPendingDriversAsync()
     {
+        // این کد تمام کسانی که وضعیت رانندگی دارند (تایید، رد، در انتظار) را می‌آورد
         return await _userManager.Users
-           .Where(u => u.DriverStatus == DriverStatus.Pending)
+           .Where(u => u.DriverStatus != Rolla.Domain.Enums.DriverStatus.None)
+           .OrderBy(u => u.DriverStatus == Rolla.Domain.Enums.DriverStatus.Pending ? 0 : 1) // اولویت با در انتظارها
            .ToListAsync();
     }
 

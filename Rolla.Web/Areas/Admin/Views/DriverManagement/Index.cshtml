@@ -6,63 +6,257 @@
     ViewData["Title"] = "مدیریت رانندگان";
 }
 
-<div class="container mt-4">
-    <h2>لیست رانندگان</h2>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ایمیل</th>
-                <th>ماشین</th>
-                <th>پلاک</th>
-                <th>وضعیت فعلی</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var driver in Model)
-            {
-                <tr>
-                    <td>@driver.Email</td>
-                    <td>@driver.CarModel</td>
-                    <td>@driver.PlateNumber</td>
-                    <!-- ... بقیه کدها ... -->
-                    <td>
-                        @if (driver.DriverStatus == DriverStatus.Pending)
-                        {
-                            <!-- دکمه تایید -->
-                            <form asp-area="Admin" asp-controller="DriverManagement" asp-action="Approve" method="post" style="display:inline;">
-                                <input type="hidden" name="userId" value="@driver.Id" />
-                                <button type="submit" class="btn btn-sm btn-success">✅ تایید</button>
-                            </form>
+<style>
+    /* استایل‌های اختصاصی داشبورد ادمین رولا */
+    body {
+        background-color: #f8fafc; /* رنگ پس‌زمینه ملایم */
+    }
 
-                            <!-- دکمه رد -->
-                            <form asp-area="Admin" asp-controller="DriverManagement" asp-action="Reject" method="post" style="display:inline;">
-                                <input type="hidden" name="userId" value="@driver.Id" />
-                                <button type="submit" class="btn btn-sm btn-danger">❌ رد</button>
-                            </form>
-                        }
-                        else
-                        {
-                            <!-- اگر وضعیت چیزی غیر از Pending بود، دکمه‌ها را نشان نده یا غیرفعال کن -->
-                            <span class="text-muted">عملیات تکمیل شده</span>
-                        }
-                    </td>
-                    <!-- ... بقیه کدها ... -->
-                    <td>
-                        @if (driver.DriverStatus == DriverStatus.Pending)
-                        {
-                            <form asp-action="Approve" method="post" style="display:inline;">
-                                <input type="hidden" name="userId" value="@driver.Id" />
-                                <button class="btn btn-sm btn-success">✅ تایید</button>
-                            </form>
-                            <form asp-action="Reject" method="post" style="display:inline;">
-                                <input type="hidden" name="userId" value="@driver.Id" />
-                                <button class="btn btn-sm btn-danger">❌ رد</button>
-                            </form>
-                        }
-                    </td>
-                </tr>
+    /* تب‌های سوئیچر مدرن */
+    .admin-switcher {
+        background: #e2e8f0;
+        border-radius: 50px;
+        padding: 6px;
+        display: inline-flex;
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+        .admin-switcher .btn {
+            border-radius: 50px;
+            padding: 10px 25px;
+            font-weight: bold;
+            color: #64748b;
+            transition: all 0.3s;
+        }
+
+            .admin-switcher .btn.active {
+                background: white;
+                color: #0f172a;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             }
-        </tbody>
-    </table>
+
+    /* کارت اصلی جدول */
+    .admin-card {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.03);
+        border: none;
+        overflow: hidden;
+    }
+
+    /* استایل جدول */
+    .table-modern th {
+        background-color: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: none;
+        padding: 18px 15px;
+    }
+
+    .table-modern td {
+        padding: 18px 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+    }
+
+    .table-modern tbody tr {
+        transition: all 0.2s;
+    }
+
+        .table-modern tbody tr:hover {
+            background-color: #f8fafc;
+            transform: scale(1.005);
+        }
+
+    /* لیبل وضعیت (پیل) */
+    .status-pill {
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* پلاک خودرو جذاب */
+    .plate-badge {
+        border: 2px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 4px 12px;
+        font-family: monospace;
+        font-size: 1rem;
+        font-weight: bold;
+        background: #f8fafc;
+        color: #1e293b;
+        display: inline-block;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    /* دکمه‌های عملیات */
+    .btn-action {
+        border-radius: 12px;
+        font-weight: 700;
+        padding: 8px 16px;
+        transition: all 0.2s;
+        border: none;
+    }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+        }
+
+    .btn-approve {
+        background: #22c55e;
+        color: white;
+        box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+    }
+
+        .btn-approve:hover {
+            background: #16a34a;
+            color: white;
+        }
+
+    .btn-reject {
+        background: #ffe4e6;
+        color: #e11d48;
+    }
+
+        .btn-reject:hover {
+            background: #fecdd3;
+            color: #be123c;
+        }
+
+</style>
+
+<div class="container mt-5 mb-5">
+
+    <!-- هدر و سوئیچر تب‌ها -->
+    <div class="d-flex flex-column align-items-center mb-5">
+        <h2 class="fw-bold mb-4" style="color: #0f172a;"> داشبورد مدیریت رولا<span style="color:#22c55e;">.</span></h2>
+
+        <div class="admin-switcher">
+            <a href="/Admin/DriverManagement" class="btn active">
+                <i class="bi bi-car-front-fill me-2"></i> درخواست‌های رانندگان
+            </a>
+            @if (User.IsInRole("SuperAdmin"))
+            {
+                <a href="/Admin/AdminManagement" class="btn text-decoration-none">
+                    <i class="bi bi-shield-lock-fill me-2"></i> مدیران سیستم
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- بدنه اصلی (کارت جدول) -->
+    <div class="admin-card">
+        <div class="table-responsive">
+            <table class="table table-modern align-middle mb-0 text-center">
+                <thead>
+                    <tr>
+                        <th class="text-start ps-4">راننده (ایمیل)</th>
+                        <th>خودرو</th>
+                        <th>پلاک</th>
+                        <th>وضعیت فعلی</th>
+                        <th>عملیات بررسی</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="py-5">
+                                <div class="text-muted d-flex flex-column align-items-center">
+                                    <i class="bi bi-inbox fs-1 mb-2 text-light-emphasis"></i>
+                                    <h5 class="fw-bold">صندوق ورودی خالی است</h5>
+                                    <p class="small">هیچ درخواست رانندگی در سیستم ثبت نشده است.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+
+                    @foreach (var driver in Model)
+                    {
+                        <tr>
+                            <!-- ایمیل -->
+                            <td class="text-start ps-4 fw-bold" style="color: #334155;">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person-fill fs-5"></i>
+                                    </div>
+                                    @driver.Email
+                                </div>
+                            </td>
+
+                            <!-- مدل خودرو -->
+                            <td class="fw-semibold">@(driver.CarModel ?? "---")</td>
+
+                            <!-- پلاک خودرو -->
+                            <td>
+                                @if (!string.IsNullOrEmpty(driver.PlateNumber))
+                                {
+                                    <span class="plate-badge">@driver.PlateNumber</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+
+                            <!-- وضعیت -->
+                            <td>
+                                @if (driver.DriverStatus == DriverStatus.Pending)
+                                {
+                                    <span class="status-pill bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
+                                        <i class="bi bi-hourglass-split"></i> در انتظار تایید
+                                    </span>
+                                }
+                                else if (driver.DriverStatus == DriverStatus.Approved)
+                                {
+                                    <span class="status-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                        <i class="bi bi-check-circle-fill"></i> تایید شده
+                                    </span>
+                                }
+                                else if (driver.DriverStatus == DriverStatus.Rejected)
+                                {
+                                    <span class="status-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                        <i class="bi bi-x-circle-fill"></i> رد شده
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- عملیات -->
+                            <td>
+                                @if (driver.DriverStatus == DriverStatus.Pending)
+                                {
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <form asp-area="Admin" asp-controller="DriverManagement" asp-action="Approve" method="post">
+                                            <input type="hidden" name="userId" value="@driver.Id" />
+                                            <button type="submit" class="btn-action btn-approve" title="تایید راننده">
+                                                <i class="bi bi-check-lg"></i> قبول
+                                            </button>
+                                        </form>
+
+                                        <form asp-area="Admin" asp-controller="DriverManagement" asp-action="Reject" method="post">
+                                            <input type="hidden" name="userId" value="@driver.Id" />
+                                            <button type="submit" class="btn-action btn-reject" title="رد کردن مدارک">
+                                                <i class="bi bi-x-lg"></i> رد
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small fw-bold"><i class="bi bi-check2-all text-success me-1"></i> بررسی شده</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>

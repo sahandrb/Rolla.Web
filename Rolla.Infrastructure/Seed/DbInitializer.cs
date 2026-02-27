@@ -7,21 +7,19 @@ namespace Rolla.Infrastructure.Seed;
 public static class DbInitializer
 {
     public static async Task SeedRolesAndSuperAdminAsync(
-        RoleManager<IdentityRole> roleManager,
-        UserManager<ApplicationUser> userManager)
+    RoleManager<IdentityRole> roleManager,
+    UserManager<ApplicationUser> userManager)
     {
-
+        // ۱. ساخت نقش‌ها
         string[] roleNames = { Roles.SuperAdmin, Roles.Admin, Roles.Driver, Roles.Rider };
         foreach (var roleName in roleNames)
         {
             if (!await roleManager.RoleExistsAsync(roleName))
-            {
                 await roleManager.CreateAsync(new IdentityRole(roleName));
-            }
         }
 
-        // 2. ساخت اکانت سوپرادمین)
-        var myEmail = "sahand@gmail.com";
+        // ۲. ساخت اکانت شما
+        var myEmail = "sahandT@gmail.com"; // 👈 ایمیل دقیق شما
         var superUser = await userManager.FindByEmailAsync(myEmail);
 
         if (superUser == null)
@@ -31,11 +29,12 @@ public static class DbInitializer
                 UserName = myEmail,
                 Email = myEmail,
                 EmailConfirmed = true,
-                FullName = "Sahand (Owner)",
-                WalletBalance = 999999999 // پول بی‌نهایت برای تست :))
+                FullName = "Sahand (Founder)",
+                WalletBalance = 1000000
             };
 
-            var result = await userManager.CreateAsync(superUser, "Sahand123!"); // 👈 رمز عبور قوی بگذار
+            // رمز عبور: Sahand123!
+            var result = await userManager.CreateAsync(superUser, "Sahand123!");
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(superUser, Roles.SuperAdmin);

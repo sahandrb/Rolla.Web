@@ -1,7 +1,17 @@
-﻿@using Rolla.Domain.Common.Constants
+﻿@using Microsoft.AspNetCore.Identity
+@using Rolla.Domain.Entities
+@using Rolla.Domain.Common.Constants
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "رولا - سیستم هوشمند درخواست خودرو";
+    // دریافت اطلاعات کاربر در صورت لاگین بودن
+    ApplicationUser? currentUser = null;
+    if (SignInManager.IsSignedIn(User))
+    {
+        currentUser = await UserManager.GetUserAsync(User);
+    }
 }
 
 <style>
@@ -26,7 +36,7 @@
         top: 0;
         left: 0;
         z-index: 1000;
-        direction: rtl; /* راست به چپ */
+        direction: rtl;
     }
 
     /* ------------------------------------- */
@@ -44,7 +54,6 @@
         z-index: 1;
     }
 
-    /* یک گرادیانت ملایم روی نقشه برای زیبایی و خوانایی لوگو */
     .map-overlay {
         position: absolute;
         top: 0;
@@ -53,10 +62,9 @@
         height: 100%;
         background: linear-gradient(to left, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 40%);
         z-index: 2;
-        pointer-events: none; /* تا مزاحم کلیک روی نقشه نشود */
+        pointer-events: none;
     }
 
-    /* برند رولا روی نقشه */
     .brand-on-map {
         position: absolute;
         top: 40px;
@@ -85,7 +93,8 @@
         justify-content: center;
         position: relative;
         z-index: 10;
-        box-shadow: -10px 0 30px rgba(0,0,0,0.05); /* سایه نرم روی نقشه */
+        box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+        overflow-y: auto; /* برای گوشی‌های کوچک که محتوا زیاد است */
     }
 
     .login-panel {
@@ -94,7 +103,7 @@
         padding: 40px;
     }
 
-    /* استایل دکمه‌ها */
+    /* استایل پایه دکمه‌های مدرن */
     .btn-modern {
         border-radius: 16px;
         padding: 16px 20px;
@@ -107,6 +116,7 @@
         border: none;
         width: 100%;
         margin-bottom: 15px;
+        cursor: pointer;
     }
 
         .btn-modern:hover {
@@ -117,6 +127,7 @@
             transform: scale(0.97);
         }
 
+    /* رنگ‌بندی اختصاصی دکمه‌ها */
     .btn-rider {
         background: #4f46e5;
         color: white;
@@ -139,6 +150,44 @@
             background: #16a34a;
             color: white;
             box-shadow: 0 12px 25px rgba(34, 197, 94, 0.35);
+        }
+
+    .btn-admin {
+        background: #e11d48;
+        color: white;
+        box-shadow: 0 8px 20px rgba(225, 29, 72, 0.25);
+    }
+
+        .btn-admin:hover {
+            background: #be123c;
+            color: white;
+            box-shadow: 0 12px 25px rgba(225, 29, 72, 0.35);
+        }
+
+    /* دکمه ورود (جدید) */
+    .btn-auth-login {
+        background: #0f172a;
+        color: white;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+    }
+
+        .btn-auth-login:hover {
+            background: #1e293b;
+            color: white;
+            box-shadow: 0 12px 25px rgba(15, 23, 42, 0.35);
+        }
+
+    /* دکمه خروج (جدید) */
+    .btn-auth-logout {
+        background: #fff1f2;
+        color: #e11d48;
+        border: 2px solid #ffe4e6;
+    }
+
+        .btn-auth-logout:hover {
+            background: #ffe4e6;
+            border-color: #fecdd3;
+            color: #be123c;
         }
 
     .btn-register {
@@ -192,6 +241,17 @@
 
     }
 
+    /* باکس کاربری */
+    .user-welcome-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
     /* ------------------------------------- */
     /* رسپانسیو (موبایل و تبلت) */
     /* ------------------------------------- */
@@ -199,12 +259,12 @@
         .split-layout
 
     {
-        flex-direction: column; /* روی هم قرار گرفتن */
+        flex-direction: column;
     }
 
     .map-section {
         width: 100%;
-        height: 45vh; /* نقشه ۴۵ درصد بالای صفحه */
+        height: 40vh;
     }
 
     .brand-on-map {
@@ -215,16 +275,15 @@
 
     .content-section {
         width: 100%;
-        height: 55vh; /* محتوا ۵۵ درصد پایین صفحه */
-        border-radius: 30px 30px 0 0; /* گرد کردن گوشه‌های بالا */
-        margin-top: -30px; /* رفتن روی نقشه */
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
-        align-items: flex-start; /* محتوا بره بالا */
-        padding-top: 20px;
+        height: 60vh;
+        border-radius: 30px 30px 0 0;
+        margin-top: -30px;
+        align-items: flex-start;
+        padding-top: 10px;
     }
 
     .login-panel {
-        padding: 20px;
+        padding: 25px;
         max-width: 100%;
     }
 
@@ -237,20 +296,33 @@
     <div class="map-section">
         <div class="brand-on-map">ROLLA<span class="brand-dot">.</span></div>
         <div class="map-overlay"></div>
-        <!-- ظرف نقشه متصل به map-logic.js -->
         <div id="map"></div>
     </div>
 
-    <!-- نیمه چپ: پنل ورود -->
+    <!-- نیمه چپ: پنل اصلی -->
     <div class="content-section">
         <div class="login-panel">
 
-            <div class="mb-5">
+            <div class="mb-4">
                 <h1 class="fw-bold text-dark mb-2">سلام! 👋</h1>
-                <p class="text-muted" style="font-size: 1rem;">برای شروع حرکت با رولا، نقش خود را انتخاب کنید.</p>
+                <p class="text-muted" style="font-size: 1rem;">برای شروع حرکت با رولا، یکی از گزینه‌های زیر را انتخاب کنید.</p>
             </div>
 
-            <!-- متصل به map-logic.js -->
+            <!-- کارت خوش‌آمدگویی (فقط در صورت لاگین بودن) -->
+            @if (currentUser != null)
+            {
+                <div class="user-welcome-box shadow-sm">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                        <i class="bi bi-person-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block">خوش آمدید،</small>
+                        <h6 class="fw-bold mb-0 text-dark">@(string.IsNullOrEmpty(currentUser.FullName) ? currentUser.Email : currentUser.FullName)</h6>
+                    </div>
+                </div>
+            }
+
+            <!-- متصل به SignalR -->
             <div class="live-status shadow-sm">
                 <div>
                     <span class="status-dot me-2"></span>
@@ -259,7 +331,17 @@
                 <div id="driver-count" class="text-primary fs-6">راننده‌های فعال: 0</div>
             </div>
 
-            <!-- دکمه‌ها -->
+            <!-- 🟩 دکمه‌های اصلی نرم‌افزار 🟩 -->
+            <!-- دکمه ورود (فقط وقتی لاگین نیست) -->
+            <!-- دکمه ورود (فقط وقتی لاگین نیست) -->
+            @if (currentUser == null)
+            {
+                <a href="/Identity/Account/Login?ReturnUrl=/" class="btn-modern btn-auth-login text-decoration-none">
+                    <i class="bi bi-box-arrow-in-right fs-4 me-3"></i>
+                    ورود به حساب کاربری
+                </a>
+            }
+
             <a href="/Rider/Ride/RequestRide" class="btn-modern btn-rider text-decoration-none">
                 <i class="bi bi-person-raised-hand fs-4 me-3"></i>
                 درخواست خودرو (مسافر)
@@ -270,20 +352,34 @@
                 ورود به پنل راننده
             </a>
 
+            <!-- پنل ادمین (فقط برای ادمین‌ها) -->
             @if (User.IsInRole(Roles.SuperAdmin) || User.IsInRole(Roles.Admin))
             {
-                <a href="/Admin/DriverManagement" class="btn-modern btn-danger text-decoration-none mb-3">
+                <a href="/Admin/DriverManagement" class="btn-modern btn-admin text-decoration-none">
                     <i class="bi bi-shield-lock-fill fs-4 me-3"></i>
                     ورود به پنل مدیریت
                 </a>
             }
 
+            <!-- دکمه خروج (فقط وقتی لاگین است) -->
+            @if (currentUser != null)
+            {
+                <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" class="w-100">
+                    <button type="submit" class="btn-modern btn-auth-logout w-100">
+                        <i class="bi bi-power fs-4 me-3"></i>
+                        خروج از حساب
+                    </button>
+                </form>
+            }
+
+            <!-- خط جداکننده -->
             <div class="d-flex align-items-center my-4">
                 <hr class="flex-grow-1 text-muted">
                 <span class="mx-3 text-muted small">یا</span>
                 <hr class="flex-grow-1 text-muted">
             </div>
 
+            <!-- ثبت‌نام راننده جدید -->
             <a href="/Driver/Register/Index" class="btn-modern btn-register text-decoration-none">
                 <i class="bi bi-shield-check fs-5 me-2"></i>
                 ثبت‌نام به عنوان راننده جدید
@@ -295,6 +391,6 @@
 </div>
 
 @section Scripts {
-    <!-- این اسکریپت هیچ تغییری نکرده و به درستی روی المان‌های جدید کار می‌کند -->
+    <!-- اسکریپت نقشه که از قبل داشتید -->
     <script src="~/js/map-logic.js"></script>
 }
